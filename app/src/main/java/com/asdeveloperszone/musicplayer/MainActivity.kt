@@ -43,8 +43,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     private var searchQuery = ""
 
     companion object {
-        private const val PERMISSION_REQUEST_CODE = 100
-        private const val NOTIFICATION_PERMISSION_CODE = 101
+        private const val PERM_AUDIO = 100
+        private const val PERM_NOTIF = 101
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,23 +63,24 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         bindService(intent, this, Context.BIND_AUTO_CREATE)
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Refresh mini player when returning from NowPlaying
+        musicService?.let { svc ->
+            svc.getCurrentSong()?.let { updateMiniPlayer(it) }
+            btnMiniPlayPause.setImageResource(
+                if (svc.isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
+        }
+    }
+
     override fun onStop() {
         super.onStop()
         if (isBound) {
             musicService?.onSongChangeListener = null
             musicService?.onPlayStateChangeListener = null
-            unbindService(this)
+            try { unbindService(this) } catch (e: Exception) { }
             isBound = false
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        musicService?.getCurrentSong()?.let { song ->
-            updateMiniPlayer(song)
-            btnMiniPlayPause.setImageResource(
-                if (musicService?.isCurrentlyPlaying() == true) R.drawable.ic_pause else R.drawable.ic_play
-            )
+            musicService = null
         }
     }
 
@@ -87,34 +88,31 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                    NOTIFICATION_PERMISSION_CODE
-                )
+                ActivityCompat.requestPermissions(this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS), PERM_NOTIF)
             }
         }
     }
 
     private fun setupViews() {
-        recyclerView = findViewById(R.id.recyclerView)
-        etSearch = findViewById(R.id.etSearch)
-        tvSongCount = findViewById(R.id.tvSongCount)
-        miniPlayer = findViewById(R.id.miniPlayer)
-        ivMiniArt = findViewById(R.id.ivMiniArt)
-        tvMiniTitle = findViewById(R.id.tvMiniTitle)
-        tvMiniArtist = findViewById(R.id.tvMiniArtist)
+        recyclerView     = findViewById(R.id.recyclerView)
+        etSearch         = findViewById(R.id.etSearch)
+        tvSongCount      = findViewById(R.id.tvSongCount)
+        miniPlayer       = findViewById(R.id.miniPlayer)
+        ivMiniArt        = findViewById(R.id.ivMiniArt)
+        tvMiniTitle      = findViewById(R.id.tvMiniTitle)
+        tvMiniArtist     = findViewById(R.id.tvMiniArtist)
         btnMiniPlayPause = findViewById(R.id.btnMiniPlayPause)
-        btnMiniNext = findViewById(R.id.btnMiniNext)
-        btnMiniClose = findViewById(R.id.btnMiniClose)
-        btnSort = findViewById(R.id.btnSort)
+        btnMiniNext      = findViewById(R.id.btnMiniNext)
+        btnMiniClose     = findViewById(R.id.btnMiniClose)
+        btnSort          = findViewById(R.id.btnSort)
 
         adapter = SongAdapter(emptyList()) { song, _ ->
             try {
-                val realIndex = allSongs.indexOfFirst { it.id == song.id }
-                if (realIndex >= 0) {
+                val idx = allSongs.indexOfFirst { it.id == song.id }
+                if (idx >= 0) {
                     PlayCountManager.increment(song.id)
-                    musicService?.setSongList(allSongs, realIndex)
+                    musicService?.setSongList(allSongs, idx)
                     adapter.setCurrentPlaying(song.id)
                     updateMiniPlayer(song)
                     btnMiniPlayPause.setImageResource(R.drawable.ic_pause)
@@ -139,15 +137,21 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         })
 
         btnSort.setOnClickListener { showSortDialog() }
-        btnMiniPlayPause.setOnClickListener { musicService?.togglePlayPause() }
-        btnMiniNext.setOnClickListener { musicService?.playNext() }
+
+        btnMiniPlayPause.setOnClickListener {
+            musicService?.togglePlayPause()
+            musicService?.let { svc ->
+                btnMiniPlayPause.setImageResource(
+                    if (svc.isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
+            }
+        }
+        btnMiniNext.setOnClickListener  { musicService?.playNext() }
         btnMiniClose.setOnClickListener {
-            try { musicService?.stopMusic() } catch (e: Exception) { }
+            musicService?.stopMusic()
             miniPlayer.visibility = View.GONE
         }
         miniPlayer.setOnClickListener {
-            try { startActivity(Intent(this, NowPlayingActivity::class.java)) }
-            catch (e: Exception) { }
+            startActivity(Intent(this, NowPlayingActivity::class.java))
         }
     }
 
@@ -157,9 +161,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
             etSearch.text.clear()
             searchQuery = ""
             applyFilterAndSort()
-        } else {
-            super.onBackPressed()
-        }
+        } else super.onBackPressed()
     }
 
     private fun showSortDialog() {
@@ -170,8 +172,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
                 currentSort = SortOption.values()[which]
                 applyFilterAndSort()
                 dialog.dismiss()
-            }
-            .show()
+            }.show()
     }
 
     private fun applyFilterAndSort() {
@@ -182,10 +183,10 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
             it.album.contains(searchQuery, ignoreCase = true)
         }
         list = when (currentSort) {
-            SortOption.A_TO_Z       -> list.sortedBy { it.title.lowercase() }
-            SortOption.Z_TO_A       -> list.sortedByDescending { it.title.lowercase() }
-            SortOption.NEWEST_FIRST -> list.sortedByDescending { it.dateAdded }
-            SortOption.OLDEST_FIRST -> list.sortedBy { it.dateAdded }
+            SortOption.A_TO_Z        -> list.sortedBy { it.title.lowercase() }
+            SortOption.Z_TO_A        -> list.sortedByDescending { it.title.lowercase() }
+            SortOption.NEWEST_FIRST  -> list.sortedByDescending { it.dateAdded }
+            SortOption.OLDEST_FIRST  -> list.sortedBy { it.dateAdded }
             SortOption.MOST_LISTENED -> list.sortedByDescending { PlayCountManager.getCount(it.id) }
         }
         adapter.updateSongs(list)
@@ -194,64 +195,58 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     }
 
     private fun checkPermissions() {
-        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+        val perm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
             Manifest.permission.READ_MEDIA_AUDIO
         else Manifest.permission.READ_EXTERNAL_STORAGE
 
-        if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(this, perm) == PackageManager.PERMISSION_GRANTED)
             loadSongs()
-        } else {
-            ActivityCompat.requestPermissions(this, arrayOf(permission), PERMISSION_REQUEST_CODE)
-        }
+        else
+            ActivityCompat.requestPermissions(this, arrayOf(perm), PERM_AUDIO)
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == PERMISSION_REQUEST_CODE && grantResults.isNotEmpty() &&
-            grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+    override fun onRequestPermissionsResult(rc: Int, perms: Array<String>, results: IntArray) {
+        super.onRequestPermissionsResult(rc, perms, results)
+        if (rc == PERM_AUDIO && results.isNotEmpty() && results[0] == PackageManager.PERMISSION_GRANTED)
             loadSongs()
-        }
     }
 
     private fun loadSongs() {
         Thread {
             val songs = mutableListOf<Song>()
             try {
-                val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
                 val projection = arrayOf(
                     MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE,
                     MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.ALBUM,
                     MediaStore.Audio.Media.DURATION, MediaStore.Audio.Media.ALBUM_ID,
                     MediaStore.Audio.Media.DATE_ADDED
                 )
-                val cursor: Cursor? = contentResolver.query(
-                    uri, projection,
-                    "${MediaStore.Audio.Media.IS_MUSIC} != 0",
-                    null, "${MediaStore.Audio.Media.TITLE} ASC"
-                )
-                cursor?.use {
-                    val idCol      = it.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
-                    val titleCol   = it.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
-                    val artistCol  = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
-                    val albumCol   = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
-                    val durCol     = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
-                    val albumIdCol = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
-                    val dateCol    = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED)
-                    while (it.moveToNext()) {
+                contentResolver.query(
+                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, projection,
+                    "${MediaStore.Audio.Media.IS_MUSIC} != 0", null,
+                    "${MediaStore.Audio.Media.TITLE} ASC"
+                )?.use { c ->
+                    val idCol  = c.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
+                    val titCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
+                    val artCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
+                    val albCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
+                    val durCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
+                    val aidCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
+                    val datCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED)
+                    while (c.moveToNext()) {
                         try {
-                            val id = it.getLong(idCol)
-                            val dur = it.getLong(durCol)
-                            val albumId = it.getLong(albumIdCol)
+                            val id  = c.getLong(idCol)
+                            val dur = c.getLong(durCol)
+                            val aid = c.getLong(aidCol)
                             if (dur > 0) songs.add(Song(
-                                id = id,
-                                title = it.getString(titleCol) ?: "Unknown",
-                                artist = it.getString(artistCol) ?: "Unknown Artist",
-                                album = it.getString(albumCol) ?: "Unknown Album",
+                                id       = id,
+                                title    = c.getString(titCol) ?: "Unknown",
+                                artist   = c.getString(artCol) ?: "Unknown Artist",
+                                album    = c.getString(albCol) ?: "Unknown Album",
                                 duration = dur,
-                                uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id),
-                                albumArtUri = ContentUris.withAppendedId(
-                                    Uri.parse("content://media/external/audio/albumart"), albumId),
-                                dateAdded = it.getLong(dateCol)
+                                uri      = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id),
+                                albumArtUri = ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), aid),
+                                dateAdded = c.getLong(datCol)
                             ))
                         } catch (e: Exception) { }
                     }
@@ -269,35 +264,32 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     }
 
     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-        try {
-            musicService = (service as MusicService.MusicBinder).getService()
-            isBound = true
-            musicService?.getCurrentSong()?.let { song -> updateMiniPlayer(song) }
-            musicService?.onSongChangeListener = { song ->
-                runOnUiThread {
-                    try {
-                        updateMiniPlayer(song)
-                        adapter.setCurrentPlaying(song.id)
-                    } catch (e: Exception) { }
-                }
+        musicService = (service as MusicService.MusicBinder).getService()
+        isBound = true
+
+        musicService?.getCurrentSong()?.let { updateMiniPlayer(it) }
+        btnMiniPlayPause.setImageResource(
+            if (musicService?.isPlaying == true) R.drawable.ic_pause else R.drawable.ic_play)
+
+        musicService?.onSongChangeListener = { song ->
+            runOnUiThread {
+                updateMiniPlayer(song)
+                adapter.setCurrentPlaying(song.id)
             }
-            musicService?.onPlayStateChangeListener = { playing ->
-                runOnUiThread {
-                    try {
-                        btnMiniPlayPause.setImageResource(
-                            if (playing) R.drawable.ic_pause else R.drawable.ic_play)
-                    } catch (e: Exception) { }
-                }
+        }
+        musicService?.onPlayStateChangeListener = { playing ->
+            runOnUiThread {
+                btnMiniPlayPause.setImageResource(
+                    if (playing) R.drawable.ic_pause else R.drawable.ic_play)
             }
-        } catch (e: Exception) { }
+        }
     }
 
     private fun updateMiniPlayer(song: Song) {
         miniPlayer.visibility = View.VISIBLE
         tvMiniTitle.text = song.title
         tvMiniArtist.text = song.artist
-        Glide.with(this)
-            .load(song.albumArtUri)
+        Glide.with(this).load(song.albumArtUri)
             .placeholder(R.drawable.ic_music_note)
             .error(R.drawable.ic_music_note)
             .into(ivMiniArt)

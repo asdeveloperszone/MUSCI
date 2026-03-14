@@ -37,31 +37,41 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
 
     private var musicService: MusicService? = null
     private var isBound = false
+    private var lastSongId: Long = -1
     private val handler = Handler(Looper.getMainLooper())
 
-    // Poll service state every 500ms - most reliable approach
+    // Polls every 300ms — updates seekbar AND syncs all UI state
     private val pollRunnable = object : Runnable {
         override fun run() {
-            val service = musicService ?: run {
-                handler.postDelayed(this, 500)
-                return
-            }
             try {
-                // Update seekbar
-                val pos = service.getCurrentPosition()
-                val dur = service.getDuration()
-                if (dur > 0) {
-                    seekBar.max = dur
-                    seekBar.progress = pos
-                    tvCurrentTime.text = formatTime(pos)
+                val svc = musicService
+                if (svc != null) {
+                    // Seekbar
+                    val pos = svc.getCurrentPosition()
+                    val dur = svc.getDuration()
+                    if (dur > 0) {
+                        seekBar.max = dur
+                        seekBar.progress = pos
+                        tvCurrentTime.text = formatTime(pos)
+                    }
+                    // Play/pause button — always sync from source of truth
+                    val playing = svc.isPlaying
+                    val icon = if (playing) R.drawable.ic_pause else R.drawable.ic_play
+                    if (btnPlayPause.tag != playing) {
+                        btnPlayPause.setImageResource(icon)
+                        btnPlayPause.tag = playing
+                        val scale = if (playing) 1f else 0.78f
+                        ivAlbumArt.animate().scaleX(scale).scaleY(scale).setDuration(250).start()
+                    }
+                    // Song changed — update all info
+                    val song = svc.getCurrentSong()
+                    if (song != null && song.id != lastSongId) {
+                        lastSongId = song.id
+                        updateSongInfo(song)
+                    }
                 }
-                // Sync play/pause button state every poll
-                val playing = service.isCurrentlyPlaying()
-                btnPlayPause.setImageResource(
-                    if (playing) R.drawable.ic_pause else R.drawable.ic_play
-                )
             } catch (e: Exception) { }
-            handler.postDelayed(this, 500)
+            handler.postDelayed(this, 300)
         }
     }
 
@@ -73,67 +83,26 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
 
     override fun onStart() {
         super.onStart()
+        // Bind to already-running service
         val intent = Intent(this, MusicService::class.java)
         startService(intent)
         bindService(intent, this, Context.BIND_AUTO_CREATE)
-    }
-
-    override fun onResume() {
-        super.onResume()
+        // Start polling
         handler.post(pollRunnable)
-        // Re-attach listeners in case they were cleared
-        attachListeners()
-        // Force refresh UI with current song
-        musicService?.getCurrentSong()?.let { updateUI(it) }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        handler.removeCallbacks(pollRunnable)
     }
 
     override fun onStop() {
         super.onStop()
         handler.removeCallbacks(pollRunnable)
         if (isBound) {
-            detachListeners()
-            unbindService(this)
+            // Clear callbacks to avoid memory leaks
+            musicService?.onSongChangeListener = null
+            musicService?.onPlayStateChangeListener = null
+            musicService?.onShuffleChangeListener = null
+            musicService?.onRepeatChangeListener = null
+            try { unbindService(this) } catch (e: Exception) { }
             isBound = false
             musicService = null
-        }
-    }
-
-    private fun attachListeners() {
-        musicService?.let { svc ->
-            svc.onSongChangeListener = { song ->
-                runOnUiThread {
-                    updateUI(song)
-                }
-            }
-            svc.onPlayStateChangeListener = { playing ->
-                runOnUiThread {
-                    btnPlayPause.setImageResource(
-                        if (playing) R.drawable.ic_pause else R.drawable.ic_play
-                    )
-                    val scale = if (playing) 1f else 0.78f
-                    ivAlbumArt.animate().scaleX(scale).scaleY(scale).setDuration(300).start()
-                }
-            }
-            svc.onShuffleChangeListener = { shuffle ->
-                runOnUiThread { updateShuffleBtn(shuffle) }
-            }
-            svc.onRepeatChangeListener = { mode ->
-                runOnUiThread { updateRepeatBtn(mode) }
-            }
-        }
-    }
-
-    private fun detachListeners() {
-        musicService?.let { svc ->
-            svc.onSongChangeListener = null
-            svc.onPlayStateChangeListener = null
-            svc.onShuffleChangeListener = null
-            svc.onRepeatChangeListener = null
         }
     }
 
@@ -156,45 +125,15 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
         tvCurrentTime = findViewById(R.id.tvCurrentTime)
         tvTotalTime   = findViewById(R.id.tvTotalTime)
 
-        btnBack.setOnClickListener { finish() }
-
-        btnPlayPause.setOnClickListener {
-            musicService?.togglePlayPause()
-            // Immediately update icon without waiting for callback
-            val playing = musicService?.isCurrentlyPlaying() ?: false
-            btnPlayPause.setImageResource(
-                if (!playing) R.drawable.ic_pause else R.drawable.ic_play
-            )
-        }
-
-        btnNext.setOnClickListener {
-            musicService?.playNext()
-        }
-
-        btnPrevious.setOnClickListener {
-            musicService?.playPrevious()
-        }
-
-        btnClose.setOnClickListener {
-            musicService?.stopMusic()
-            finish()
-        }
-
-        btnShuffle.setOnClickListener {
-            musicService?.toggleShuffle()
-        }
-
-        btnRepeat.setOnClickListener {
-            musicService?.cycleRepeat()
-        }
-
-        btnRewind.setOnClickListener {
-            musicService?.rewind()
-        }
-
-        btnForward.setOnClickListener {
-            musicService?.forward()
-        }
+        btnBack.setOnClickListener      { finish() }
+        btnPlayPause.setOnClickListener { musicService?.togglePlayPause() }
+        btnNext.setOnClickListener      { musicService?.playNext() }
+        btnPrevious.setOnClickListener  { musicService?.playPrevious() }
+        btnRewind.setOnClickListener    { musicService?.rewind() }
+        btnForward.setOnClickListener   { musicService?.forward() }
+        btnShuffle.setOnClickListener   { musicService?.toggleShuffle() }
+        btnRepeat.setOnClickListener    { musicService?.cycleRepeat() }
+        btnClose.setOnClickListener     { musicService?.stopMusic(); finish() }
 
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: SeekBar, progress: Int, fromUser: Boolean) {
@@ -206,44 +145,56 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
     }
 
     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-        musicService = (service as MusicService.MusicBinder).getService()
+        val svc = (service as MusicService.MusicBinder).getService()
+        musicService = svc
         isBound = true
+        lastSongId = -1 // Reset so UI refreshes
 
-        // Attach listeners
-        attachListeners()
-
-        // Load current state immediately
-        musicService?.getCurrentSong()?.let { song ->
-            updateUI(song)
+        // Set callbacks for immediate response
+        svc.onSongChangeListener = { song ->
+            runOnUiThread {
+                lastSongId = song.id
+                updateSongInfo(song)
+            }
         }
-        updateShuffleBtn(musicService?.isShuffle ?: false)
-        updateRepeatBtn(musicService?.repeatMode ?: RepeatMode.OFF)
+        svc.onPlayStateChangeListener = { playing ->
+            runOnUiThread {
+                btnPlayPause.tag = playing
+                btnPlayPause.setImageResource(if (playing) R.drawable.ic_pause else R.drawable.ic_play)
+                val scale = if (playing) 1f else 0.78f
+                ivAlbumArt.animate().scaleX(scale).scaleY(scale).setDuration(250).start()
+            }
+        }
+        svc.onShuffleChangeListener = { shuffle ->
+            runOnUiThread { btnShuffle.alpha = if (shuffle) 1f else 0.4f }
+        }
+        svc.onRepeatChangeListener = { mode ->
+            runOnUiThread { updateRepeatBtn(mode) }
+        }
 
-        // Start polling
-        handler.post(pollRunnable)
+        // Load initial state
+        svc.getCurrentSong()?.let { song ->
+            lastSongId = song.id
+            updateSongInfo(song)
+        }
+        btnShuffle.alpha = if (svc.isShuffle) 1f else 0.4f
+        updateRepeatBtn(svc.repeatMode)
     }
 
-    private fun updateUI(song: Song) {
+    private fun updateSongInfo(song: Song) {
         tvTitle.text = song.title
         tvArtist.text = song.artist
         tvAlbum.text = song.album
         tvTotalTime.text = song.getDurationFormatted()
 
-        // Sync play state
-        val playing = musicService?.isCurrentlyPlaying() ?: false
-        btnPlayPause.setImageResource(if (playing) R.drawable.ic_pause else R.drawable.ic_play)
-        val scale = if (playing) 1f else 0.78f
-        ivAlbumArt.animate().scaleX(scale).scaleY(scale).setDuration(300).start()
-
-        // Load album art
         Glide.with(this).asBitmap()
             .load(song.albumArtUri)
             .placeholder(R.drawable.ic_music_note)
             .error(R.drawable.ic_music_note)
             .into(object : CustomTarget<Bitmap>() {
-                override fun onResourceReady(bitmap: Bitmap, transition: Transition<in Bitmap>?) {
+                override fun onResourceReady(bitmap: Bitmap, t: Transition<in Bitmap>?) {
                     ivAlbumArt.setImageBitmap(bitmap)
-                    applyDynamicGradient(bitmap)
+                    applyGradient(bitmap)
                 }
                 override fun onLoadCleared(p: android.graphics.drawable.Drawable?) {
                     ivAlbumArt.setImageDrawable(p)
@@ -255,16 +206,14 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
             })
     }
 
-    private fun applyDynamicGradient(bitmap: Bitmap) {
+    private fun applyGradient(bitmap: Bitmap) {
         try {
-            Palette.from(bitmap).generate { palette ->
-                val dominant = palette?.getDominantColor(0xFF1A0000.toInt()) ?: 0xFF1A0000.toInt()
-                val vibrant  = palette?.getVibrantColor(0xFFCC0000.toInt()) ?: 0xFFCC0000.toInt()
-                val muted    = palette?.getMutedColor(0xFF0F0F0F.toInt()) ?: 0xFF0F0F0F.toInt()
+            Palette.from(bitmap).generate { p ->
+                val top    = p?.getDominantColor(0xFF1A0000.toInt()) ?: 0xFF1A0000.toInt()
+                val mid    = p?.getVibrantColor(0xFFCC0000.toInt())  ?: 0xFFCC0000.toInt()
+                val bottom = p?.getMutedColor(0xFF0F0F0F.toInt())    ?: 0xFF0F0F0F.toInt()
                 rootLayout.background = GradientDrawable(
-                    GradientDrawable.Orientation.TOP_BOTTOM,
-                    intArrayOf(dominant, vibrant, muted)
-                )
+                    GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(top, mid, bottom))
             }
         } catch (e: Exception) { applyDefaultGradient() }
     }
@@ -272,28 +221,14 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
     private fun applyDefaultGradient() {
         rootLayout.background = GradientDrawable(
             GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(0xFF1A0000.toInt(), 0xFF880000.toInt(), 0xFF0F0F0F.toInt())
-        )
-    }
-
-    private fun updateShuffleBtn(shuffle: Boolean) {
-        btnShuffle.alpha = if (shuffle) 1f else 0.4f
+            intArrayOf(0xFF1A0000.toInt(), 0xFF880000.toInt(), 0xFF0F0F0F.toInt()))
     }
 
     private fun updateRepeatBtn(mode: RepeatMode) {
         when (mode) {
-            RepeatMode.OFF -> {
-                btnRepeat.alpha = 0.4f
-                btnRepeat.setImageResource(R.drawable.ic_repeat)
-            }
-            RepeatMode.REPEAT_ALL -> {
-                btnRepeat.alpha = 1f
-                btnRepeat.setImageResource(R.drawable.ic_repeat)
-            }
-            RepeatMode.REPEAT_ONE -> {
-                btnRepeat.alpha = 1f
-                btnRepeat.setImageResource(R.drawable.ic_repeat_one)
-            }
+            RepeatMode.OFF        -> { btnRepeat.alpha = 0.4f; btnRepeat.setImageResource(R.drawable.ic_repeat) }
+            RepeatMode.REPEAT_ALL -> { btnRepeat.alpha = 1f;   btnRepeat.setImageResource(R.drawable.ic_repeat) }
+            RepeatMode.REPEAT_ONE -> { btnRepeat.alpha = 1f;   btnRepeat.setImageResource(R.drawable.ic_repeat_one) }
         }
     }
 
