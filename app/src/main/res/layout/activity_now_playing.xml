@@ -77,7 +77,6 @@
             android:singleLine="true"
             android:ellipsize="marquee"
             android:marqueeRepeatLimit="marquee_forever"
-            android:selected="true"
             android:fontFamily="sans-serif-condensed" />
 
         <TextView
