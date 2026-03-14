@@ -49,7 +49,7 @@ class SongAdapter(
         val isActive = song.id == currentPlayingId
         holder.playingIndicator.visibility = if (isActive) View.VISIBLE else View.GONE
         holder.ivPlayingIcon.visibility = if (isActive) View.VISIBLE else View.GONE
-        holder.card.cardElevation = if (isActive) 8f else 2f
+        holder.card.cardElevation = if (isActive) 8f * holder.itemView.context.resources.displayMetrics.density else 2f * holder.itemView.context.resources.displayMetrics.density
         holder.card.setCardBackgroundColor(
             if (isActive)
                 androidx.core.content.ContextCompat.getColor(holder.itemView.context, R.color.card_active)
