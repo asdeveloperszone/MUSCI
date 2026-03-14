@@ -14,4 +14,11 @@
         <item name="android:statusBarColor">#1A0000</item>
         <item name="android:navigationBarColor">#000000</item>
     </style>
+
+    <style name="SortDialogTheme" parent="Theme.MaterialComponents.DayNight.Dialog.Alert">
+        <item name="colorPrimary">@color/red_primary</item>
+        <item name="colorAccent">@color/red_primary</item>
+        <item name="android:colorBackground">#1C1C1C</item>
+        <item name="colorOnSurface">@color/white</item>
+    </style>
 </resources>

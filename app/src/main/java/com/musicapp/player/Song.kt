@@ -9,7 +9,8 @@ data class Song(
     val album: String,
     val duration: Long,
     val uri: Uri,
-    val albumArtUri: Uri?
+    val albumArtUri: Uri?,
+    val dateAdded: Long = 0L
 ) {
     fun getDurationFormatted(): String {
         val minutes = (duration / 1000) / 60

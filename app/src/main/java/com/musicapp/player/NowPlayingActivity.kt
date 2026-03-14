@@ -137,7 +137,7 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
             })
 
         btnPlayPause.setImageResource(
-            if (musicService?.isCurrentlyPlaying() == true) R.drawable.ic_pause else R.drawable.ic_play)
+            if (musicService?.isPlaying() == true) R.drawable.ic_pause else R.drawable.ic_play)
     }
 
     private fun applyDynamicGradient(bitmap: Bitmap) {

@@ -37,7 +37,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="AS MUSIC PLAYER"
+                    android:text="MUSIC PLAYER"
                     android:textColor="@color/white"
                     android:textSize="18sp"
                     android:textStyle="bold"
@@ -55,6 +55,16 @@
                     android:background="@drawable/bg_pill"
                     android:paddingHorizontal="8dp"
                     android:paddingVertical="2dp" />
+
+                <ImageButton
+                    android:id="@+id/btnSort"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:layout_marginStart="8dp"
+                    android:src="@drawable/ic_sort"
+                    android:background="@drawable/bg_icon_btn"
+                    android:tint="@color/white"
+                    android:contentDescription="Sort" />
 
             </LinearLayout>
 
@@ -86,7 +96,6 @@
         android:clipToPadding="false"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-    <!-- Mini Player -->
     <LinearLayout
         android:id="@+id/miniPlayer"
         android:layout_width="match_parent"

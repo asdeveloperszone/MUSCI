@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">MUSCI</string>
+    <string name="app_name">MUSIC PLAYER</string>
+    <string name="sort_az">A → Z</string>
+    <string name="sort_za">Z → A</string>
+    <string name="sort_newest">Newest First</string>
+    <string name="sort_oldest">Oldest First</string>
+    <string name="sort_most_listened">Most Listened</string>
 </resources>

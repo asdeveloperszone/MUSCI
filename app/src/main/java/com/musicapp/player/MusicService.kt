@@ -9,6 +9,7 @@ import android.media.MediaPlayer
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.palette.graphics.Palette
 
@@ -21,6 +22,7 @@ class MusicService : Service() {
         const val ACTION_NEXT = "ACTION_NEXT"
         const val ACTION_PREV = "ACTION_PREV"
         const val ACTION_STOP = "ACTION_STOP"
+        private const val TAG = "MusicService"
     }
 
     private val binder = MusicBinder()
@@ -59,18 +61,23 @@ class MusicService : Service() {
     }
 
     fun setSongList(songs: List<Song>, startIndex: Int = 0) {
+        if (songs.isEmpty()) return
         originalList = songs
         playList = if (isShuffle) songs.shuffled() else songs.toList()
-        currentIndex = startIndex
+        currentIndex = startIndex.coerceIn(0, songs.size - 1)
         playCurrent()
     }
 
     fun togglePlayPause() {
-        mediaPlayer?.let {
-            if (it.isPlaying) { it.pause(); isPlaying = false }
-            else { it.start(); isPlaying = true }
-            onPlayStateChangeListener?.invoke(isPlaying)
-            updateNotification()
+        try {
+            mediaPlayer?.let {
+                if (it.isPlaying) { it.pause(); isPlaying = false }
+                else { it.start(); isPlaying = true }
+                onPlayStateChangeListener?.invoke(isPlaying)
+                updateNotification()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "togglePlayPause error: ${e.message}")
         }
     }
 
@@ -90,7 +97,9 @@ class MusicService : Service() {
         isShuffle = !isShuffle
         val currentSong = getCurrentSong()
         playList = if (isShuffle) originalList.shuffled() else originalList.toList()
-        currentIndex = currentSong?.let { s -> playList.indexOfFirst { it.id == s.id }.coerceAtLeast(0) } ?: 0
+        currentIndex = currentSong?.let { s ->
+            playList.indexOfFirst { it.id == s.id }.takeIf { it >= 0 } ?: 0
+        } ?: 0
         onShuffleChangeListener?.invoke(isShuffle)
     }
 
@@ -100,62 +109,110 @@ class MusicService : Service() {
     }
 
     fun stopMusic() {
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
-        mediaPlayer = null
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
+        try {
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+            mediaPlayer = null
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+            stopSelf()
+        } catch (e: Exception) {
+            Log.e(TAG, "stopMusic error: ${e.message}")
+        }
     }
 
-    fun seekTo(position: Int) { mediaPlayer?.seekTo(position) }
-    fun getCurrentPosition(): Int = mediaPlayer?.currentPosition ?: 0
-    fun getDuration(): Int = mediaPlayer?.duration ?: 0
-    fun isCurrentlyPlaying(): Boolean = mediaPlayer?.isPlaying ?: false
-    fun getCurrentSong(): Song? = if (playList.isNotEmpty()) playList[currentIndex] else null
+    fun seekTo(position: Int) {
+        try { mediaPlayer?.seekTo(position) } catch (e: Exception) { }
+    }
+
+    fun getCurrentPosition(): Int {
+        return try { mediaPlayer?.currentPosition ?: 0 } catch (e: Exception) { 0 }
+    }
+
+    fun getDuration(): Int {
+        return try { mediaPlayer?.duration ?: 0 } catch (e: Exception) { 0 }
+    }
+
+    fun isCurrentlyPlaying(): Boolean {
+        return try { mediaPlayer?.isPlaying ?: false } catch (e: Exception) { false }
+    }
+
+    fun getCurrentSong(): Song? =
+        if (playList.isNotEmpty() && currentIndex in playList.indices) playList[currentIndex] else null
+
+    private fun onSongFinished() {
+        isPlaying = false
+        onPlayStateChangeListener?.invoke(false)
+    }
 
     private fun playCurrent() {
         if (playList.isEmpty()) return
-        val song = playList[currentIndex]
-        mediaPlayer?.release()
-        mediaPlayer = MediaPlayer().apply {
-            setAudioAttributes(AudioAttributes.Builder()
-                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                .setUsage(AudioAttributes.USAGE_MEDIA).build())
-            setDataSource(applicationContext, song.uri)
-            prepare()
-            start()
-            setOnCompletionListener {
-                when (repeatMode) {
-                    RepeatMode.REPEAT_ONE -> playCurrent()
-                    RepeatMode.OFF -> { if (currentIndex < playList.size - 1) playNext() else onSongFinished() }
-                    RepeatMode.REPEAT_ALL -> playNext()
+        val song = playList.getOrNull(currentIndex) ?: return
+        try {
+            mediaPlayer?.release()
+            mediaPlayer = null
+            mediaPlayer = MediaPlayer().apply {
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .setUsage(AudioAttributes.USAGE_MEDIA).build()
+                )
+                setDataSource(applicationContext, song.uri)
+                prepare()
+                start()
+                setOnCompletionListener {
+                    when (repeatMode) {
+                        RepeatMode.REPEAT_ONE -> playCurrent()
+                        RepeatMode.OFF -> {
+                            if (currentIndex < playList.size - 1) playNext()
+                            else onSongFinished()
+                        }
+                        RepeatMode.REPEAT_ALL -> playNext()
+                    }
+                }
+                setOnErrorListener { _, what, extra ->
+                    Log.e(TAG, "MediaPlayer error: what=$what extra=$extra")
+                    onSongFinished()
+                    true
                 }
             }
+            isPlaying = true
+            onSongChangeListener?.invoke(song)
+            onPlayStateChangeListener?.invoke(true)
+            loadAlbumArtAndNotify(song)
+        } catch (e: Exception) {
+            Log.e(TAG, "playCurrent error: ${e.message}")
+            onSongFinished()
         }
-        isPlaying = true
-        onSongChangeListener?.invoke(song)
-        onPlayStateChangeListener?.invoke(true)
-        loadAlbumArtAndNotify(song)
     }
-    private fun onSongFinished() { isPlaying = false; onPlayStateChangeListener?.invoke(false) }
 
     private fun loadAlbumArtAndNotify(song: Song) {
         Thread {
             var bitmap: Bitmap? = null
             try {
-                song.albumArtUri?.let {
-                    val fd = contentResolver.openFileDescriptor(it, "r")
-                    bitmap = BitmapFactory.decodeFileDescriptor(fd?.fileDescriptor)
-                    fd?.close()
+                song.albumArtUri?.let { uri ->
+                    contentResolver.openFileDescriptor(uri, "r")?.use { fd ->
+                        bitmap = BitmapFactory.decodeFileDescriptor(fd.fileDescriptor)
+                    }
                 }
             } catch (e: Exception) { bitmap = null }
-            startForeground(NOTIFICATION_ID, buildNotification(song, bitmap))
+            try {
+                startForeground(NOTIFICATION_ID, buildNotification(song, bitmap))
+            } catch (e: Exception) {
+                Log.e(TAG, "startForeground error: ${e.message}")
+            }
         }.start()
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(CHANNEL_ID, "Music Player", NotificationManager.IMPORTANCE_LOW).apply {
+            val channel = NotificationChannel(
+                CHANNEL_ID, "Music Player", NotificationManager.IMPORTANCE_LOW
+            ).apply {
                 description = "Music playback controls"
                 setShowBadge(false)
             }
@@ -165,11 +222,16 @@ class MusicService : Service() {
 
     private fun buildNotification(song: Song, albumArt: Bitmap? = null): Notification {
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        val playPauseIntent = PendingIntent.getService(this, 0, Intent(this, MusicService::class.java).apply { action = ACTION_PLAY_PAUSE }, flags)
-        val nextIntent = PendingIntent.getService(this, 1, Intent(this, MusicService::class.java).apply { action = ACTION_NEXT }, flags)
-        val prevIntent = PendingIntent.getService(this, 2, Intent(this, MusicService::class.java).apply { action = ACTION_PREV }, flags)
-        val stopIntent = PendingIntent.getService(this, 3, Intent(this, MusicService::class.java).apply { action = ACTION_STOP }, flags)
-        val openIntent = PendingIntent.getActivity(this, 0, Intent(this, NowPlayingActivity::class.java), flags)
+        val playPauseIntent = PendingIntent.getService(this, 0,
+            Intent(this, MusicService::class.java).apply { action = ACTION_PLAY_PAUSE }, flags)
+        val nextIntent = PendingIntent.getService(this, 1,
+            Intent(this, MusicService::class.java).apply { action = ACTION_NEXT }, flags)
+        val prevIntent = PendingIntent.getService(this, 2,
+            Intent(this, MusicService::class.java).apply { action = ACTION_PREV }, flags)
+        val stopIntent = PendingIntent.getService(this, 3,
+            Intent(this, MusicService::class.java).apply { action = ACTION_STOP }, flags)
+        val openIntent = PendingIntent.getActivity(this, 0,
+            Intent(this, NowPlayingActivity::class.java), flags)
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(song.title)
@@ -177,18 +239,26 @@ class MusicService : Service() {
             .setSmallIcon(R.drawable.ic_music_note)
             .setContentIntent(openIntent)
             .addAction(R.drawable.ic_skip_previous, "Previous", prevIntent)
-            .addAction(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play, if (isPlaying) "Pause" else "Play", playPauseIntent)
+            .addAction(
+                if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play,
+                if (isPlaying) "Pause" else "Play",
+                playPauseIntent
+            )
             .addAction(R.drawable.ic_skip_next, "Next", nextIntent)
             .addAction(R.drawable.ic_close, "Stop", stopIntent)
-            .setStyle(androidx.media.app.NotificationCompat.MediaStyle().setShowActionsInCompactView(0, 1, 2))
+            .setStyle(androidx.media.app.NotificationCompat.MediaStyle()
+                .setShowActionsInCompactView(0, 1, 2))
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOnlyAlertOnce(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
         albumArt?.let {
             builder.setLargeIcon(it)
-            Palette.from(it).generate { palette ->
-                palette?.dominantSwatch?.rgb?.let { color -> builder.setColor(color) }
-            }
+            try {
+                Palette.from(it).generate { palette ->
+                    palette?.dominantSwatch?.rgb?.let { color -> builder.setColor(color) }
+                }
+            } catch (e: Exception) { }
         }
         return builder.build()
     }
@@ -199,7 +269,10 @@ class MusicService : Service() {
     }
 
     override fun onDestroy() {
-        mediaPlayer?.release()
+        try {
+            mediaPlayer?.release()
+            mediaPlayer = null
+        } catch (e: Exception) { }
         super.onDestroy()
     }
 }

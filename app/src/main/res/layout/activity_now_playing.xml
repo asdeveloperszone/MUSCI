@@ -7,6 +7,7 @@
     android:layout_height="match_parent"
     android:background="@color/bg_dark">
 
+    <!-- Back Button -->
     <ImageButton
         android:id="@+id/btnBack"
         android:layout_width="42dp"
@@ -20,6 +21,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
+    <!-- Title label -->
     <TextView
         android:id="@+id/tvNowPlayingLabel"
         android:layout_width="0dp"
@@ -35,6 +37,7 @@
         app:layout_constraintStart_toEndOf="@id/btnBack"
         app:layout_constraintEnd_toStartOf="@id/btnClose" />
 
+    <!-- Close/Stop Button -->
     <ImageButton
         android:id="@+id/btnClose"
         android:layout_width="42dp"
@@ -44,10 +47,11 @@
         android:src="@drawable/ic_close"
         android:background="@drawable/bg_icon_btn"
         android:tint="#FFAAAAAA"
-        android:contentDescription="Stop"
+        android:contentDescription="Stop and Close"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!-- Album Art -->
     <ImageView
         android:id="@+id/ivAlbumArt"
         android:layout_width="0dp"
@@ -62,8 +66,10 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintDimensionRatio="1:1"
-        app:layout_constraintBottom_toTopOf="@id/tvTitle" />
+        app:layout_constraintBottom_toTopOf="@id/tvTitle"
+        app:layout_constraintVerticalBias="0.0" />
 
+    <!-- Song Title -->
     <TextView
         android:id="@+id/tvTitle"
         android:layout_width="0dp"
@@ -80,7 +86,8 @@
         android:fontFamily="sans-serif-condensed"
         app:layout_constraintTop_toBottomOf="@id/ivAlbumArt"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/tvArtist" />
 
     <TextView
         android:id="@+id/tvArtist"
@@ -94,7 +101,8 @@
         android:singleLine="true"
         app:layout_constraintTop_toBottomOf="@id/tvTitle"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/tvAlbum" />
 
     <TextView
         android:id="@+id/tvAlbum"
@@ -108,8 +116,10 @@
         android:singleLine="true"
         app:layout_constraintTop_toBottomOf="@id/tvArtist"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/seekBar" />
 
+    <!-- SeekBar -->
     <SeekBar
         android:id="@+id/seekBar"
         android:layout_width="0dp"
@@ -120,7 +130,8 @@
         android:thumbTint="@color/white"
         app:layout_constraintTop_toBottomOf="@id/tvAlbum"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/tvCurrentTime" />
 
     <TextView
         android:id="@+id/tvCurrentTime"
@@ -131,7 +142,8 @@
         android:textColor="#88FFFFFF"
         android:textSize="11sp"
         app:layout_constraintTop_toBottomOf="@id/seekBar"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/btnShuffle" />
 
     <TextView
         android:id="@+id/tvTotalTime"
@@ -142,14 +154,16 @@
         android:textColor="#88FFFFFF"
         android:textSize="11sp"
         app:layout_constraintTop_toBottomOf="@id/seekBar"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/btnShuffle" />
 
+    <!-- Shuffle -->
     <ImageButton
         android:id="@+id/btnShuffle"
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:layout_marginStart="24dp"
-        android:layout_marginBottom="28dp"
+        android:layout_marginBottom="20dp"
         android:src="@drawable/ic_shuffle"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:tint="@color/white"
@@ -159,6 +173,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvCurrentTime" />
 
+    <!-- Previous -->
     <ImageButton
         android:id="@+id/btnPrevious"
         android:layout_width="52dp"
@@ -172,6 +187,7 @@
         app:layout_constraintStart_toEndOf="@id/btnShuffle"
         app:layout_constraintEnd_toStartOf="@id/btnPlayPause" />
 
+    <!-- Play/Pause -->
     <ImageButton
         android:id="@+id/btnPlayPause"
         android:layout_width="68dp"
@@ -185,6 +201,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!-- Next -->
     <ImageButton
         android:id="@+id/btnNext"
         android:layout_width="52dp"
@@ -198,6 +215,7 @@
         app:layout_constraintStart_toEndOf="@id/btnPlayPause"
         app:layout_constraintEnd_toStartOf="@id/btnRepeat" />
 
+    <!-- Repeat -->
     <ImageButton
         android:id="@+id/btnRepeat"
         android:layout_width="40dp"
