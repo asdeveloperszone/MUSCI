@@ -15,42 +15,41 @@ class SplashActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
 
-        val ivLogo = findViewById<ImageView>(R.id.ivSplashLogo)
-        val tvAppName = findViewById<TextView>(R.id.tvSplashName)
+        val ivLogo    = findViewById<ImageView>(R.id.ivSplashLogo)
+        val tvName    = findViewById<TextView>(R.id.tvSplashName)
         val tvTagline = findViewById<TextView>(R.id.tvSplashTagline)
 
-        // Logo: scale + fade in
-        val logoAnim = AnimationSet(true).apply {
+        // Logo bounce in
+        AnimationSet(true).apply {
             addAnimation(ScaleAnimation(0f, 1f, 0f, 1f,
                 Animation.RELATIVE_TO_SELF, 0.5f,
-                Animation.RELATIVE_TO_SELF, 0.5f).apply { duration = 700 })
-            addAnimation(AlphaAnimation(0f, 1f).apply { duration = 700 })
-            fillAfter = true
-        }
-
-        // App name: slide up + fade
-        val nameAnim = AnimationSet(true).apply {
-            addAnimation(TranslateAnimation(0f, 0f, 60f, 0f).apply { duration = 600 })
+                Animation.RELATIVE_TO_SELF, 0.5f).apply { duration = 600 })
             addAnimation(AlphaAnimation(0f, 1f).apply { duration = 600 })
-            startOffset = 500
             fillAfter = true
+            ivLogo.startAnimation(this)
         }
 
-        // Tagline: fade in with delay
-        val taglineAnim = AnimationSet(true).apply {
-            addAnimation(AlphaAnimation(0f, 1f).apply { duration = 800 })
-            addAnimation(TranslateAnimation(0f, 0f, 30f, 0f).apply { duration = 800 })
-            startOffset = 900
+        // Name slide up
+        AnimationSet(true).apply {
+            addAnimation(TranslateAnimation(0f, 0f, 50f, 0f).apply { duration = 500 })
+            addAnimation(AlphaAnimation(0f, 1f).apply { duration = 500 })
+            startOffset = 400
             fillAfter = true
+            tvName.startAnimation(this)
         }
 
-        ivLogo.startAnimation(logoAnim)
-        tvAppName.startAnimation(nameAnim)
-        tvTagline.startAnimation(taglineAnim)
+        // Tagline fade in
+        AnimationSet(true).apply {
+            addAnimation(AlphaAnimation(0f, 1f).apply { duration = 600 })
+            addAnimation(TranslateAnimation(0f, 0f, 20f, 0f).apply { duration = 600 })
+            startOffset = 700
+            fillAfter = true
+            tvTagline.startAnimation(this)
+        }
 
         Handler(Looper.getMainLooper()).postDelayed({
             startActivity(Intent(this, MainActivity::class.java))
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-        }, 2800)
+        }, 2500)
     }
 }

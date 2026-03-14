@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_dark">
+
+    <!-- Header -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:paddingHorizontal="16dp" android:background="@drawable/bg_appbar_gradient">
+        <ImageButton android:id="@+id/btnSettingsBack"
+            android:layout_width="40dp" android:layout_height="40dp"
+            android:src="@drawable/ic_arrow_back"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="@color/white" android:contentDescription="Back"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="SETTINGS"
+            android:textColor="@color/white" android:textSize="18sp"
+            android:textStyle="bold" android:letterSpacing="0.1"
+            android:fontFamily="sans-serif-condensed" android:layout_marginStart="12dp"/>
+    </LinearLayout>
+
+    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="16dp">
+
+            <!-- Playback -->
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="PLAYBACK" android:textColor="@color/red_primary"
+                android:textSize="12sp" android:letterSpacing="0.1"
+                android:layout_marginBottom="8dp" android:layout_marginTop="8dp"/>
+
+            <androidx.cardview.widget.CardView
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                app:cardBackgroundColor="@color/card_bg" app:cardCornerRadius="12dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="vertical" android:padding="4dp">
+
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="52dp"
+                        android:orientation="horizontal" android:gravity="center_vertical"
+                        android:paddingHorizontal="16dp">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Auto Play on Headphone" android:textColor="@color/white"
+                                android:textSize="14sp"/>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Play when headphones connected"
+                                android:textColor="#88FFFFFF" android:textSize="12sp"/>
+                        </LinearLayout>
+                        <Switch android:id="@+id/switchAutoPlay"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="0.5dp"
+                        android:background="#22FFFFFF" android:layout_marginHorizontal="16dp"/>
+
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="52dp"
+                        android:orientation="horizontal" android:gravity="center_vertical"
+                        android:paddingHorizontal="16dp">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Pause on Unplug" android:textColor="@color/white"
+                                android:textSize="14sp"/>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Pause when headphones removed"
+                                android:textColor="#88FFFFFF" android:textSize="12sp"/>
+                        </LinearLayout>
+                        <Switch android:id="@+id/switchPauseOnUnplug"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="0.5dp"
+                        android:background="#22FFFFFF" android:layout_marginHorizontal="16dp"/>
+
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="52dp"
+                        android:orientation="horizontal" android:gravity="center_vertical"
+                        android:paddingHorizontal="16dp">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Gapless Playback" android:textColor="@color/white"
+                                android:textSize="14sp"/>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="No gap between songs"
+                                android:textColor="#88FFFFFF" android:textSize="12sp"/>
+                        </LinearLayout>
+                        <Switch android:id="@+id/switchGapless"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Appearance -->
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="APPEARANCE" android:textColor="@color/red_primary"
+                android:textSize="12sp" android:letterSpacing="0.1"
+                android:layout_marginBottom="8dp" android:layout_marginTop="16dp"/>
+
+            <androidx.cardview.widget.CardView
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                app:cardBackgroundColor="@color/card_bg" app:cardCornerRadius="12dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="52dp"
+                    android:orientation="horizontal" android:gravity="center_vertical"
+                    android:paddingHorizontal="16dp">
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:text="Dark Theme"
+                        android:textColor="@color/white" android:textSize="14sp"/>
+                    <Switch android:id="@+id/switchDarkTheme"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Battery -->
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="BATTERY" android:textColor="@color/red_primary"
+                android:textSize="12sp" android:letterSpacing="0.1"
+                android:layout_marginBottom="8dp" android:layout_marginTop="16dp"/>
+
+            <Button android:id="@+id/btnBatteryOptimization"
+                android:layout_width="match_parent" android:layout_height="48dp"
+                android:text="Battery Optimization Settings"
+                android:backgroundTint="@color/red_primary"
+                android:textColor="@color/white"/>
+
+            <!-- About -->
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="ABOUT" android:textColor="@color/red_primary"
+                android:textSize="12sp" android:letterSpacing="0.1"
+                android:layout_marginBottom="8dp" android:layout_marginTop="16dp"/>
+
+            <TextView android:id="@+id/tvVersion"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="Version 4.0" android:textColor="#88FFFFFF"
+                android:textSize="13sp" android:gravity="center"
+                android:padding="16dp"/>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

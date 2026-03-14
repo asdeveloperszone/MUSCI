@@ -1,1 +1,1 @@
--keep class com.musicapp.player.** { *; }
+-keep class com.asdeveloperszone.musicplayer.** { *; }
