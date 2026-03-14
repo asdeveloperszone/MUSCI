@@ -52,9 +52,9 @@ class SongAdapter(
         holder.card.cardElevation = if (isActive) 8f else 2f
         holder.card.setCardBackgroundColor(
             if (isActive)
-                holder.itemView.context.getColor(R.color.card_active)
+                androidx.core.content.ContextCompat.getColor(holder.itemView.context, R.color.card_active)
             else
-                holder.itemView.context.getColor(R.color.card_bg)
+                androidx.core.content.ContextCompat.getColor(holder.itemView.context, R.color.card_bg)
         )
 
         holder.itemView.setOnClickListener {
