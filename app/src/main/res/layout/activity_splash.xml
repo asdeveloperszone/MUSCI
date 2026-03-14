@@ -16,7 +16,6 @@
         app:layout_constraintBottom_toTopOf="@id/tvSplashName"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintVerticalBias="0.4">
 
         <ImageView
             android:id="@+id/ivSplashLogo"
