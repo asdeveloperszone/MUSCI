@@ -53,19 +53,19 @@ jobs:
             --ks-key-alias "${{ secrets.KEY_ALIAS }}" \
             --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
             --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
+            --min-sdk-version 28 \
             --out app/build/outputs/apk/release/MusicPlayer-signed.apk \
             app/build/outputs/apk/release/app-release-aligned.apk
 
       - name: Sign AAB
         run: |
-          BUILD_TOOLS=$(ls /usr/local/lib/android/sdk/build-tools/ | sort -V | tail -1)
-          /usr/local/lib/android/sdk/build-tools/$BUILD_TOOLS/apksigner sign \
-            --ks keystore.jks \
-            --ks-key-alias "${{ secrets.KEY_ALIAS }}" \
-            --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
-            --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
-            --out app/build/outputs/bundle/release/MusicPlayer-signed.aab \
-            app/build/outputs/bundle/release/app-release.aab
+          jarsigner \
+            -keystore keystore.jks \
+            -storepass "${{ secrets.KEY_STORE_PASSWORD }}" \
+            -keypass "${{ secrets.KEY_PASSWORD }}" \
+            -signedjar app/build/outputs/bundle/release/MusicPlayer-signed.aab \
+            app/build/outputs/bundle/release/app-release.aab \
+            "${{ secrets.KEY_ALIAS }}"
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
