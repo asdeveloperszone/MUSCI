@@ -67,7 +67,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintDimensionRatio="1:1"
         app:layout_constraintBottom_toTopOf="@id/tvTitle"
-
+        app:layout_constraintVerticalBias="0.0" />
     <!-- Song Title -->
     <TextView
         android:id="@+id/tvTitle"
