@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     android:background="@drawable/bg_splash_gradient">
 
-    <!-- Circle background behind logo -->
     <FrameLayout
         android:id="@+id/logoCircle"
         android:layout_width="180dp"
@@ -15,8 +14,8 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/tvSplashName"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintVerticalBias="0.4">
+        app:layout_constraintEnd_toEndOf="parent">
+
         <ImageView
             android:id="@+id/ivSplashLogo"
             android:layout_width="140dp"
@@ -26,7 +25,6 @@
             android:scaleType="centerCrop" />
     </FrameLayout>
 
-    <!-- App Name -->
     <TextView
         android:id="@+id/tvSplashName"
         android:layout_width="wrap_content"
@@ -40,9 +38,9 @@
         android:layout_marginTop="24dp"
         app:layout_constraintTop_toBottomOf="@id/logoCircle"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/tvSplashTagline" />
 
-    <!-- Tagline animated -->
     <TextView
         android:id="@+id/tvSplashTagline"
         android:layout_width="wrap_content"
@@ -55,6 +53,7 @@
         android:layout_marginTop="10dp"
         app:layout_constraintTop_toBottomOf="@id/tvSplashName"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
