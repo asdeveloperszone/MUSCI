@@ -2,12 +2,15 @@ package com.musicapp.player
 
 import android.app.*
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.palette.graphics.Palette
 
 class MusicService : Service() {
 
@@ -17,15 +20,22 @@ class MusicService : Service() {
         const val ACTION_PLAY_PAUSE = "ACTION_PLAY_PAUSE"
         const val ACTION_NEXT = "ACTION_NEXT"
         const val ACTION_PREV = "ACTION_PREV"
+        const val ACTION_STOP = "ACTION_STOP"
     }
 
     private val binder = MusicBinder()
     private var mediaPlayer: MediaPlayer? = null
-    private var songList: List<Song> = emptyList()
+    private var originalList: List<Song> = emptyList()
+    private var playList: List<Song> = emptyList()
     private var currentIndex: Int = 0
     private var isPlaying: Boolean = false
-    private var onSongChangeListener: ((Song) -> Unit)? = null
-    private var onPlayStateChangeListener: ((Boolean) -> Unit)? = null
+    var isShuffle: Boolean = false
+    var repeatMode: RepeatMode = RepeatMode.OFF
+
+    var onSongChangeListener: ((Song) -> Unit)? = null
+    var onPlayStateChangeListener: ((Boolean) -> Unit)? = null
+    var onShuffleChangeListener: ((Boolean) -> Unit)? = null
+    var onRepeatChangeListener: ((RepeatMode) -> Unit)? = null
 
     inner class MusicBinder : Binder() {
         fun getService(): MusicService = this@MusicService
@@ -43,78 +53,109 @@ class MusicService : Service() {
             ACTION_PLAY_PAUSE -> togglePlayPause()
             ACTION_NEXT -> playNext()
             ACTION_PREV -> playPrevious()
+            ACTION_STOP -> stopMusic()
         }
         return START_STICKY
     }
 
     fun setSongList(songs: List<Song>, startIndex: Int = 0) {
-        songList = songs
+        originalList = songs
+        playList = if (isShuffle) songs.shuffled() else songs.toList()
         currentIndex = startIndex
         playCurrent()
     }
 
     fun togglePlayPause() {
         mediaPlayer?.let {
-            if (it.isPlaying) {
-                it.pause()
-                isPlaying = false
-            } else {
-                it.start()
-                isPlaying = true
-            }
+            if (it.isPlaying) { it.pause(); isPlaying = false }
+            else { it.start(); isPlaying = true }
             onPlayStateChangeListener?.invoke(isPlaying)
             updateNotification()
         }
     }
 
     fun playNext() {
-        if (songList.isEmpty()) return
-        currentIndex = (currentIndex + 1) % songList.size
+        if (playList.isEmpty()) return
+        currentIndex = (currentIndex + 1) % playList.size
         playCurrent()
     }
 
     fun playPrevious() {
-        if (songList.isEmpty()) return
-        currentIndex = if (currentIndex - 1 < 0) songList.size - 1 else currentIndex - 1
+        if (playList.isEmpty()) return
+        currentIndex = if (currentIndex - 1 < 0) playList.size - 1 else currentIndex - 1
         playCurrent()
+    }
+
+    fun toggleShuffle() {
+        isShuffle = !isShuffle
+        val currentSong = getCurrentSong()
+        playList = if (isShuffle) originalList.shuffled() else originalList.toList()
+        currentIndex = currentSong?.let { s -> playList.indexOfFirst { it.id == s.id }.coerceAtLeast(0) } ?: 0
+        onShuffleChangeListener?.invoke(isShuffle)
+    }
+
+    fun cycleRepeat() {
+        repeatMode = repeatMode.next()
+        onRepeatChangeListener?.invoke(repeatMode)
+    }
+
+    fun stopMusic() {
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
+        stopForeground(true)
+        stopSelf()
     }
 
     fun seekTo(position: Int) { mediaPlayer?.seekTo(position) }
     fun getCurrentPosition(): Int = mediaPlayer?.currentPosition ?: 0
     fun getDuration(): Int = mediaPlayer?.duration ?: 0
     fun isPlaying(): Boolean = mediaPlayer?.isPlaying ?: false
-    fun getCurrentSong(): Song? = if (songList.isNotEmpty()) songList[currentIndex] else null
-
-    fun setOnSongChangeListener(listener: (Song) -> Unit) { onSongChangeListener = listener }
-    fun setOnPlayStateChangeListener(listener: (Boolean) -> Unit) { onPlayStateChangeListener = listener }
+    fun getCurrentSong(): Song? = if (playList.isNotEmpty()) playList[currentIndex] else null
 
     private fun playCurrent() {
-        if (songList.isEmpty()) return
-        val song = songList[currentIndex]
+        if (playList.isEmpty()) return
+        val song = playList[currentIndex]
         mediaPlayer?.release()
         mediaPlayer = MediaPlayer().apply {
-            setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .build()
-            )
+            setAudioAttributes(AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .setUsage(AudioAttributes.USAGE_MEDIA).build())
             setDataSource(applicationContext, song.uri)
             prepare()
             start()
-            setOnCompletionListener { playNext() }
+            setOnCompletionListener {
+                when (repeatMode) {
+                    RepeatMode.REPEAT_ONE -> playCurrent()
+                    RepeatMode.OFF -> if (currentIndex < playList.size - 1) playNext()
+                                     else { isPlaying = false; onPlayStateChangeListener?.invoke(false) }
+                    RepeatMode.REPEAT_ALL -> playNext()
+                }
+            }
         }
         isPlaying = true
         onSongChangeListener?.invoke(song)
         onPlayStateChangeListener?.invoke(true)
-        startForeground(NOTIFICATION_ID, buildNotification(song))
+        loadAlbumArtAndNotify(song)
+    }
+
+    private fun loadAlbumArtAndNotify(song: Song) {
+        Thread {
+            var bitmap: Bitmap? = null
+            try {
+                song.albumArtUri?.let {
+                    val fd = contentResolver.openFileDescriptor(it, "r")
+                    bitmap = BitmapFactory.decodeFileDescriptor(fd?.fileDescriptor)
+                    fd?.close()
+                }
+            } catch (e: Exception) { bitmap = null }
+            startForeground(NOTIFICATION_ID, buildNotification(song, bitmap))
+        }.start()
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID, "Music Player", NotificationManager.IMPORTANCE_LOW
-            ).apply {
+            val channel = NotificationChannel(CHANNEL_ID, "Music Player", NotificationManager.IMPORTANCE_LOW).apply {
                 description = "Music playback controls"
                 setShowBadge(false)
             }
@@ -122,44 +163,43 @@ class MusicService : Service() {
         }
     }
 
-    private fun buildNotification(song: Song): Notification {
-        val playPauseIntent = PendingIntent.getService(this, 0,
-            Intent(this, MusicService::class.java).apply { action = ACTION_PLAY_PAUSE },
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val nextIntent = PendingIntent.getService(this, 1,
-            Intent(this, MusicService::class.java).apply { action = ACTION_NEXT },
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val prevIntent = PendingIntent.getService(this, 2,
-            Intent(this, MusicService::class.java).apply { action = ACTION_PREV },
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val openAppIntent = PendingIntent.getActivity(this, 0,
-            Intent(this, NowPlayingActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    private fun buildNotification(song: Song, albumArt: Bitmap? = null): Notification {
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        val playPauseIntent = PendingIntent.getService(this, 0, Intent(this, MusicService::class.java).apply { action = ACTION_PLAY_PAUSE }, flags)
+        val nextIntent = PendingIntent.getService(this, 1, Intent(this, MusicService::class.java).apply { action = ACTION_NEXT }, flags)
+        val prevIntent = PendingIntent.getService(this, 2, Intent(this, MusicService::class.java).apply { action = ACTION_PREV }, flags)
+        val stopIntent = PendingIntent.getService(this, 3, Intent(this, MusicService::class.java).apply { action = ACTION_STOP }, flags)
+        val openIntent = PendingIntent.getActivity(this, 0, Intent(this, NowPlayingActivity::class.java), flags)
 
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(song.title)
             .setContentText(song.artist)
             .setSmallIcon(R.drawable.ic_music_note)
-            .setContentIntent(openAppIntent)
+            .setContentIntent(openIntent)
             .addAction(R.drawable.ic_skip_previous, "Previous", prevIntent)
-            .addAction(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play,
-                if (isPlaying) "Pause" else "Play", playPauseIntent)
+            .addAction(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play, if (isPlaying) "Pause" else "Play", playPauseIntent)
             .addAction(R.drawable.ic_skip_next, "Next", nextIntent)
-            .setStyle(androidx.media.app.NotificationCompat.MediaStyle()
-                .setShowActionsInCompactView(0, 1, 2))
+            .addAction(R.drawable.ic_close, "Stop", stopIntent)
+            .setStyle(androidx.media.app.NotificationCompat.MediaStyle().setShowActionsInCompactView(0, 1, 2))
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOnlyAlertOnce(true)
-            .build()
+
+        albumArt?.let {
+            builder.setLargeIcon(it)
+            Palette.from(it).generate { palette ->
+                palette?.dominantSwatch?.rgb?.let { color -> builder.setColor(color) }
+            }
+        }
+        return builder.build()
     }
 
     private fun updateNotification() {
         val song = getCurrentSong() ?: return
-        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, buildNotification(song))
+        loadAlbumArtAndNotify(song)
     }
 
     override fun onDestroy() {
         mediaPlayer?.release()
-        mediaPlayer = null
         super.onDestroy()
     }
 }

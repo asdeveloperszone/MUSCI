@@ -1,4 +1,4 @@
-name: Build Music Player APK
+name: Build APK
 
 on:
   push:
@@ -21,6 +21,6 @@ jobs:
       - run: ./gradlew assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: MusicPlayer-debug-apk
+          name: MUSCIv2-apk
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 30

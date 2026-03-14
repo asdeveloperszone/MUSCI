@@ -10,4 +10,8 @@
         <item name="android:statusBarColor">@color/red_dark</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
+    <style name="Theme.MusicPlayer.Splash" parent="Theme.MusicPlayer">
+        <item name="android:statusBarColor">#1A0000</item>
+        <item name="android:navigationBarColor">#000000</item>
+    </style>
 </resources>

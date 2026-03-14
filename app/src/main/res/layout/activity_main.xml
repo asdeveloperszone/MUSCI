@@ -6,86 +6,103 @@
     android:layout_height="match_parent"
     android:background="@color/bg_dark">
 
-    <!-- Top App Bar -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/red_primary"
+        android:background="@drawable/bg_appbar_gradient"
         app:elevation="0dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingTop="16dp"
-            android:paddingBottom="12dp"
-            android:paddingHorizontal="20dp">
+            android:paddingTop="12dp"
+            android:paddingBottom="10dp"
+            android:paddingHorizontal="16dp">
 
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="🎵 Music Player"
-                android:textColor="@color/white"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:fontFamily="sans-serif-condensed" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-            <TextView
-                android:id="@+id/tvSongCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Loading..."
-                android:textColor="#CCFFFFFF"
-                android:textSize="13sp"
-                android:layout_marginTop="2dp" />
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@mipmap/ic_launcher"
+                    android:scaleType="centerCrop" />
 
-            <!-- Search Bar -->
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="AS MUSIC PLAYER"
+                    android:textColor="@color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.08"
+                    android:fontFamily="sans-serif-condensed"
+                    android:layout_marginStart="10dp" />
+
+                <TextView
+                    android:id="@+id/tvSongCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0 songs"
+                    android:textColor="#AAFFFFFF"
+                    android:textSize="12sp"
+                    android:background="@drawable/bg_pill"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="2dp" />
+
+            </LinearLayout>
+
             <EditText
                 android:id="@+id/etSearch"
                 android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:layout_marginTop="12dp"
+                android:layout_height="38dp"
+                android:layout_marginTop="10dp"
                 android:background="@drawable/bg_search"
                 android:drawableStart="@drawable/ic_search"
-                android:drawablePadding="10dp"
-                android:hint="Search songs, artists..."
-                android:textColorHint="#99FFFFFF"
+                android:drawablePadding="8dp"
+                android:hint="Search songs, artists, albums..."
+                android:textColorHint="#88FFFFFF"
                 android:textColor="@color/white"
-                android:textSize="14sp"
-                android:paddingHorizontal="14dp"
+                android:textSize="13sp"
+                android:paddingHorizontal="12dp"
                 android:inputType="text"
                 android:imeOptions="actionSearch" />
 
         </LinearLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Song List -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingBottom="80dp"
+        android:paddingBottom="76dp"
+        android:paddingTop="8dp"
         android:clipToPadding="false"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-    <!-- Mini Player (bottom) -->
+    <!-- Mini Player -->
     <LinearLayout
         android:id="@+id/miniPlayer"
         android:layout_width="match_parent"
-        android:layout_height="68dp"
+        android:layout_height="64dp"
         android:layout_gravity="bottom"
-        android:background="@color/red_dark"
+        android:background="@drawable/bg_mini_player"
         android:orientation="horizontal"
-        android:padding="10dp"
+        android:paddingHorizontal="12dp"
         android:gravity="center_vertical"
-        android:elevation="8dp"
+        android:elevation="12dp"
         android:visibility="gone">
 
         <ImageView
             android:id="@+id/ivMiniArt"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:scaleType="centerCrop"
             android:src="@drawable/ic_music_note"
             android:background="@drawable/bg_album_art_mini" />
@@ -95,7 +112,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:layout_marginHorizontal="12dp">
+            android:layout_marginHorizontal="10dp">
 
             <TextView
                 android:id="@+id/tvMiniTitle"
@@ -103,7 +120,7 @@
                 android:layout_height="wrap_content"
                 android:text="Song Title"
                 android:textColor="@color/white"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textStyle="bold"
                 android:singleLine="true"
                 android:ellipsize="marquee" />
@@ -113,29 +130,39 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Artist"
-                android:textColor="#CCFFFFFF"
-                android:textSize="12sp"
+                android:textColor="#BBFFFFFF"
+                android:textSize="11sp"
                 android:singleLine="true" />
 
         </LinearLayout>
 
         <ImageButton
             android:id="@+id/btnMiniPlayPause"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:src="@drawable/ic_play"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:tint="@color/white"
-            android:contentDescription="Play/Pause" />
+            android:contentDescription="Play Pause" />
 
         <ImageButton
             android:id="@+id/btnMiniNext"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:src="@drawable/ic_skip_next"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:tint="@color/white"
-            android:contentDescription="Next song" />
+            android:contentDescription="Next" />
+
+        <ImageButton
+            android:id="@+id/btnMiniClose"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_close"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="#AAFFFFFF"
+            android:layout_marginStart="4dp"
+            android:contentDescription="Close" />
 
     </LinearLayout>
 

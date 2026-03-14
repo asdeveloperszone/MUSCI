@@ -32,6 +32,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     private lateinit var tvMiniArtist: TextView
     private lateinit var btnMiniPlayPause: ImageButton
     private lateinit var btnMiniNext: ImageButton
+    private lateinit var btnMiniClose: ImageButton
 
     private var musicService: MusicService? = null
     private var isBound = false
@@ -58,11 +59,17 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         tvMiniArtist = findViewById(R.id.tvMiniArtist)
         btnMiniPlayPause = findViewById(R.id.btnMiniPlayPause)
         btnMiniNext = findViewById(R.id.btnMiniNext)
+        btnMiniClose = findViewById(R.id.btnMiniClose)
 
-        adapter = SongAdapter(emptyList()) { index ->
-            musicService?.setSongList(allSongs, index)
-            adapter.setCurrentPlaying(index)
+        // Pass both song AND its index in allSongs — fixes search play bug
+        adapter = SongAdapter(emptyList()) { song, _ ->
+            val realIndex = allSongs.indexOfFirst { it.id == song.id }
+            if (realIndex >= 0) {
+                musicService?.setSongList(allSongs, realIndex)
+                adapter.setCurrentPlaying(song.id)
+            }
         }
+
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
@@ -74,18 +81,20 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
 
         btnMiniPlayPause.setOnClickListener { musicService?.togglePlayPause() }
         btnMiniNext.setOnClickListener { musicService?.playNext() }
+        btnMiniClose.setOnClickListener {
+            musicService?.stopMusic()
+            miniPlayer.visibility = View.GONE
+        }
         miniPlayer.setOnClickListener { startActivity(Intent(this, NowPlayingActivity::class.java)) }
     }
 
     private fun checkPermissions() {
         val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
             Manifest.permission.READ_MEDIA_AUDIO
-        else
-            Manifest.permission.READ_EXTERNAL_STORAGE
+        else Manifest.permission.READ_EXTERNAL_STORAGE
 
         if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED) {
-            loadSongs()
-            startMusicService()
+            loadSongs(); startMusicService()
         } else {
             ActivityCompat.requestPermissions(this, arrayOf(permission), PERMISSION_REQUEST_CODE)
         }
@@ -95,10 +104,9 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSION_REQUEST_CODE && grantResults.isNotEmpty() &&
             grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            loadSongs()
-            startMusicService()
+            loadSongs(); startMusicService()
         } else {
-            Toast.makeText(this, "Permission required to access music files", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Permission required to access music", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -106,19 +114,14 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         val songs = mutableListOf<Song>()
         val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
         val projection = arrayOf(
-            MediaStore.Audio.Media._ID,
-            MediaStore.Audio.Media.TITLE,
-            MediaStore.Audio.Media.ARTIST,
-            MediaStore.Audio.Media.ALBUM,
-            MediaStore.Audio.Media.DURATION,
-            MediaStore.Audio.Media.ALBUM_ID
+            MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE,
+            MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.ALBUM,
+            MediaStore.Audio.Media.DURATION, MediaStore.Audio.Media.ALBUM_ID
         )
-        val cursor: Cursor? = contentResolver.query(
-            uri, projection,
-            "${MediaStore.Audio.Media.IS_MUSIC} != 0",
-            null,
-            "${MediaStore.Audio.Media.TITLE} ASC"
-        )
+        val cursor: Cursor? = contentResolver.query(uri, projection,
+            "${MediaStore.Audio.Media.IS_MUSIC} != 0", null,
+            "${MediaStore.Audio.Media.TITLE} ASC")
+
         cursor?.use {
             val idCol = it.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
             val titleCol = it.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
@@ -126,21 +129,18 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
             val albumCol = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
             val durationCol = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
             val albumIdCol = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
-
             while (it.moveToNext()) {
                 val id = it.getLong(idCol)
-                val albumId = it.getLong(albumIdCol)
                 val duration = it.getLong(durationCol)
+                val albumId = it.getLong(albumIdCol)
                 if (duration > 0) {
-                    songs.add(Song(
-                        id = id,
-                        title = it.getString(titleCol) ?: "Unknown",
-                        artist = it.getString(artistCol) ?: "Unknown Artist",
-                        album = it.getString(albumCol) ?: "Unknown Album",
-                        duration = duration,
-                        uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id),
-                        albumArtUri = ContentUris.withAppendedId(
-                            Uri.parse("content://media/external/audio/albumart"), albumId)
+                    songs.add(Song(id,
+                        it.getString(titleCol) ?: "Unknown",
+                        it.getString(artistCol) ?: "Unknown Artist",
+                        it.getString(albumCol) ?: "Unknown Album",
+                        duration,
+                        ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id),
+                        ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), albumId)
                     ))
                 }
             }
@@ -169,8 +169,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
         musicService = (service as MusicService.MusicBinder).getService()
         isBound = true
-        musicService?.setOnSongChangeListener { song -> runOnUiThread { updateMiniPlayer(song) } }
-        musicService?.setOnPlayStateChangeListener { playing ->
+        musicService?.onSongChangeListener = { song -> runOnUiThread { updateMiniPlayer(song) } }
+        musicService?.onPlayStateChangeListener = { playing ->
             runOnUiThread {
                 btnMiniPlayPause.setImageResource(if (playing) R.drawable.ic_pause else R.drawable.ic_play)
             }
@@ -186,9 +186,5 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     }
 
     override fun onServiceDisconnected(name: ComponentName?) { isBound = false; musicService = null }
-
-    override fun onDestroy() {
-        if (isBound) { unbindService(this); isBound = false }
-        super.onDestroy()
-    }
+    override fun onDestroy() { if (isBound) { unbindService(this); isBound = false }; super.onDestroy() }
 }

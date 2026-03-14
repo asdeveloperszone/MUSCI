@@ -2,40 +2,57 @@
 <androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardSong"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="12dp"
-    android:layout_marginVertical="4dp"
+    android:layout_marginVertical="5dp"
     app:cardBackgroundColor="@color/card_bg"
-    app:cardCornerRadius="12dp"
+    app:cardCornerRadius="14dp"
     app:cardElevation="2dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="12dp"
+        android:padding="10dp"
         android:gravity="center_vertical">
 
-        <!-- Playing Indicator -->
+        <!-- Playing indicator bar -->
         <View
             android:id="@+id/viewPlayingIndicator"
-            android:layout_width="4dp"
-            android:layout_height="40dp"
+            android:layout_width="3dp"
+            android:layout_height="48dp"
             android:layout_marginEnd="8dp"
-            android:background="@color/red_primary"
-            android:visibility="invisible" />
+            android:background="@drawable/bg_playing_indicator"
+            android:visibility="gone" />
 
         <!-- Album Art -->
-        <ImageView
-            android:id="@+id/ivAlbumArt"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:scaleType="centerCrop"
-            android:src="@drawable/ic_music_note"
-            android:background="@drawable/bg_album_art_mini" />
+        <FrameLayout
+            android:layout_width="58dp"
+            android:layout_height="58dp">
 
-        <!-- Song Info -->
+            <ImageView
+                android:id="@+id/ivAlbumArt"
+                android:layout_width="58dp"
+                android:layout_height="58dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_music_note"
+                android:background="@drawable/bg_album_art_mini" />
+
+            <ImageView
+                android:id="@+id/ivPlayingIcon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="bottom|end"
+                android:src="@drawable/ic_play"
+                android:background="@drawable/bg_playing_badge"
+                android:padding="3dp"
+                android:visibility="gone" />
+
+        </FrameLayout>
+
+        <!-- Song Details -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -52,17 +69,30 @@
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:singleLine="true"
-                android:ellipsize="end" />
+                android:ellipsize="end"
+                android:fontFamily="sans-serif-medium" />
 
             <TextView
                 android:id="@+id/tvArtistName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Artist"
-                android:textColor="#99FFFFFF"
+                android:text="Artist Name"
+                android:textColor="@color/red_light"
                 android:textSize="12sp"
                 android:layout_marginTop="2dp"
-                android:singleLine="true" />
+                android:singleLine="true"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/tvAlbumName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Album Name"
+                android:textColor="#66FFFFFF"
+                android:textSize="11sp"
+                android:layout_marginTop="1dp"
+                android:singleLine="true"
+                android:ellipsize="end" />
 
         </LinearLayout>
 
@@ -72,8 +102,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="3:45"
-            android:textColor="#66FFFFFF"
-            android:textSize="12sp" />
+            android:textColor="#55FFFFFF"
+            android:textSize="11sp"
+            android:fontFamily="sans-serif-light" />
 
     </LinearLayout>
 
