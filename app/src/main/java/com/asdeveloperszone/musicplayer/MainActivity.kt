@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     private var allSongs: List<Song> = emptyList()
     private var currentSort = SortOption.A_TO_Z
     private var searchQuery = ""
+    private lateinit var prefs: android.content.SharedPreferences
 
     companion object {
         private const val PERM_AUDIO = 100
