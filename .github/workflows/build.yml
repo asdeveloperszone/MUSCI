@@ -50,7 +50,7 @@ jobs:
             app/build/outputs/apk/release/app-release-aligned.apk
           /usr/local/lib/android/sdk/build-tools/$BUILD_TOOLS/apksigner sign \
             --ks keystore.jks \
-            --ks-alias "${{ secrets.KEY_ALIAS }}" \
+            --ks-key-alias "${{ secrets.KEY_ALIAS }}" \
             --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
             --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
             --out app/build/outputs/apk/release/MusicPlayer-signed.apk \
@@ -61,7 +61,7 @@ jobs:
           BUILD_TOOLS=$(ls /usr/local/lib/android/sdk/build-tools/ | sort -V | tail -1)
           /usr/local/lib/android/sdk/build-tools/$BUILD_TOOLS/apksigner sign \
             --ks keystore.jks \
-            --ks-alias "${{ secrets.KEY_ALIAS }}" \
+            --ks-key-alias "${{ secrets.KEY_ALIAS }}" \
             --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
             --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
             --out app/build/outputs/bundle/release/MusicPlayer-signed.aab \
