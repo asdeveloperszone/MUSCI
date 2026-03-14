@@ -51,6 +51,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         PlayCountManager.init(this)
+        prefs = getSharedPreferences("music_settings", Context.MODE_PRIVATE)
+        currentSort = SortOption.valueOf(prefs.getString("sort_option", SortOption.A_TO_Z.name) ?: SortOption.A_TO_Z.name)
         setupViews()
         checkPermissions()
         requestNotificationPermission()
@@ -170,7 +172,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
             .setTitle("Sort Songs")
             .setSingleChoiceItems(options, SortOption.values().indexOf(currentSort)) { dialog, which ->
                 currentSort = SortOption.values()[which]
-                applyFilterAndSort()
+                prefs.edit().putString("sort_option", currentSort.name).apply()
                 dialog.dismiss()
             }.show()
     }
