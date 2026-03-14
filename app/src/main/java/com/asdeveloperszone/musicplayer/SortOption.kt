@@ -1,4 +1,4 @@
-package com.musicapp.player
+package com.asdeveloperszone.musicplayer
 
 enum class SortOption(val label: String) {
     A_TO_Z("A → Z"),

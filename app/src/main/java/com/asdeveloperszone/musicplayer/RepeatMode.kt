@@ -1,4 +1,4 @@
-package com.musicapp.player
+package com.asdeveloperszone.musicplayer
 
 enum class RepeatMode {
     OFF, REPEAT_ALL, REPEAT_ONE;

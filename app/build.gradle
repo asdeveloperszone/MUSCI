@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.musicapp.player'
+    namespace "com.asdeveloperszone.musicplayer"
     compileSdk 36
 
     defaultConfig {
-        applicationId "com.musicapp.player"
+        applicationId "com.asdeveloperszone.musicplayer"
         minSdk 28
         targetSdk 36
         versionCode 2

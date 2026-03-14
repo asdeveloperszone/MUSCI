@@ -1,4 +1,4 @@
-package com.musicapp.player
+package com.asdeveloperszone.musicplayer
 
 import android.net.Uri
 
