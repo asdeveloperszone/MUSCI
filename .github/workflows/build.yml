@@ -7,83 +7,38 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+      - uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: "8.4"
-
-      - name: Generate Gradle Wrapper
-        run: gradle wrapper --gradle-version 8.4
-
-      - name: Grant execute permission
-        run: chmod +x gradlew
-
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
-
-      - name: Build Release APK
-        run: ./gradlew assembleRelease --stacktrace
-
-      - name: Build Release AAB
-        run: ./gradlew bundleRelease --stacktrace
-
+      - run: gradle wrapper --gradle-version 8.4
+      - run: chmod +x gradlew
+      - run: ./gradlew assembleDebug --stacktrace
+      - run: ./gradlew assembleRelease --stacktrace
+      - run: ./gradlew bundleRelease --stacktrace
       - name: Decode Keystore
         run: echo "${{ secrets.SIGNING_KEY }}" | base64 -d > keystore.jks
-
       - name: Sign APK
         run: |
-          BUILD_TOOLS=$(ls /usr/local/lib/android/sdk/build-tools/ | sort -V | tail -1)
-          echo "Using build-tools: $BUILD_TOOLS"
-          /usr/local/lib/android/sdk/build-tools/$BUILD_TOOLS/zipalign -v 4 \
-            app/build/outputs/apk/release/app-release-unsigned.apk \
-            app/build/outputs/apk/release/app-release-aligned.apk
-          /usr/local/lib/android/sdk/build-tools/$BUILD_TOOLS/apksigner sign \
-            --ks keystore.jks \
-            --ks-key-alias "${{ secrets.KEY_ALIAS }}" \
-            --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
-            --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
-            --min-sdk-version 28 \
-            --out app/build/outputs/apk/release/MusicPlayer-signed.apk \
-            app/build/outputs/apk/release/app-release-aligned.apk
-
+          BT=$(ls /usr/local/lib/android/sdk/build-tools/ | sort -V | tail -1)
+          /usr/local/lib/android/sdk/build-tools/$BT/zipalign -v 4 app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/app-aligned.apk
+          /usr/local/lib/android/sdk/build-tools/$BT/apksigner sign --ks keystore.jks --ks-key-alias "${{ secrets.KEY_ALIAS }}" --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" --key-pass pass:"${{ secrets.KEY_PASSWORD }}" --min-sdk-version 28 --out app/build/outputs/apk/release/MusicPlayer-signed.apk app/build/outputs/apk/release/app-aligned.apk
       - name: Sign AAB
-        run: |
-          jarsigner \
-            -keystore keystore.jks \
-            -storepass "${{ secrets.KEY_STORE_PASSWORD }}" \
-            -keypass "${{ secrets.KEY_PASSWORD }}" \
-            -signedjar app/build/outputs/bundle/release/MusicPlayer-signed.aab \
-            app/build/outputs/bundle/release/app-release.aab \
-            "${{ secrets.KEY_ALIAS }}"
-
-      - name: Upload Debug APK
-        uses: actions/upload-artifact@v4
+        run: jarsigner -keystore keystore.jks -storepass "${{ secrets.KEY_STORE_PASSWORD }}" -keypass "${{ secrets.KEY_PASSWORD }}" -signedjar app/build/outputs/bundle/release/MusicPlayer-signed.aab app/build/outputs/bundle/release/app-release.aab "${{ secrets.KEY_ALIAS }}"
+      - uses: actions/upload-artifact@v4
         with:
           name: Debug-APK
           path: app/build/outputs/apk/debug/*.apk
-          retention-days: 30
-
-      - name: Upload Signed APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: Signed-Release-APK
+          name: Signed-APK
           path: app/build/outputs/apk/release/MusicPlayer-signed.apk
-          retention-days: 30
-
-      - name: Upload Signed AAB
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: Signed-Release-AAB
+          name: Signed-AAB
           path: app/build/outputs/bundle/release/MusicPlayer-signed.aab
-          retention-days: 30
