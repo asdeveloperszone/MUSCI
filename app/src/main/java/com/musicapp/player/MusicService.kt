@@ -127,8 +127,7 @@ class MusicService : Service() {
             setOnCompletionListener {
                 when (repeatMode) {
                     RepeatMode.REPEAT_ONE -> playCurrent()
-                    RepeatMode.OFF -> if (currentIndex < playList.size - 1) playNext()
-                                     else { isPlaying = false; onPlayStateChangeListener?.invoke(false) }
+                    RepeatMode.OFF -> { if (currentIndex < playList.size - 1) playNext() else onSongFinished() }
                     RepeatMode.REPEAT_ALL -> playNext()
                 }
             }
@@ -138,6 +137,7 @@ class MusicService : Service() {
         onPlayStateChangeListener?.invoke(true)
         loadAlbumArtAndNotify(song)
     }
+    private fun onSongFinished() { isPlaying = false; onPlayStateChangeListener?.invoke(false) }
 
     private fun loadAlbumArtAndNotify(song: Song) {
         Thread {
