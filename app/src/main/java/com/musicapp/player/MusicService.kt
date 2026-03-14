@@ -110,7 +110,7 @@ class MusicService : Service() {
     fun seekTo(position: Int) { mediaPlayer?.seekTo(position) }
     fun getCurrentPosition(): Int = mediaPlayer?.currentPosition ?: 0
     fun getDuration(): Int = mediaPlayer?.duration ?: 0
-    fun isPlaying(): Boolean = mediaPlayer?.isPlaying ?: false
+    fun isCurrentlyPlaying(): Boolean = mediaPlayer?.isPlaying ?: false
     fun getCurrentSong(): Song? = if (playList.isNotEmpty()) playList[currentIndex] else null
 
     private fun playCurrent() {
