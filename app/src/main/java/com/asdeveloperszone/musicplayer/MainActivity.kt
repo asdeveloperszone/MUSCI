@@ -37,17 +37,23 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     private lateinit var btnMiniClose: ImageButton
     private lateinit var btnSort: ImageButton
     private lateinit var btnSettings: ImageButton
+
+    // Tabs
     private lateinit var tabSongs: TextView
     private lateinit var tabAlbums: TextView
     private lateinit var tabArtists: TextView
+    private lateinit var tabFolders: TextView
+    private lateinit var tabPlaylists: TextView
     private lateinit var tabFavorites: TextView
+    private lateinit var tabRecent: TextView
+    private lateinit var tabMostPlayed: TextView
 
     private var svc: MusicService? = null
     private var bound = false
     private var allSongs: List<Song> = emptyList()
     private var currentSort = SortOption.A_TO_Z
     private var searchQuery = ""
-    private var currentTab = 0
+    private var currentTab = 0 // 0=Songs,3=Favorites,6=Recent,7=MostPlayed
     private lateinit var prefs: SharedPreferences
     private lateinit var settingsPrefs: SharedPreferences
 
@@ -57,12 +63,10 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Apply saved theme first
         settingsPrefs = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
-        val isDark = settingsPrefs.getBoolean("dark_theme", true)
         AppCompatDelegate.setDefaultNightMode(
-            if (isDark) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
-        )
+            if (settingsPrefs.getBoolean("dark_theme", true))
+                AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO)
 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -73,6 +77,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
 
         PlayCountManager.init(this)
         FavoritesManager.init(this)
+        RecentlyPlayedManager.init(this)
+        PlaylistManager.init(this)
         initViews()
         checkAudioPermission()
         askNotifPermission()
@@ -82,8 +88,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     override fun onStart() {
         super.onStart()
         val i = Intent(this, MusicService::class.java)
-        startService(i)
-        bindService(i, this, Context.BIND_AUTO_CREATE)
+        startService(i); bindService(i, this, Context.BIND_AUTO_CREATE)
     }
 
     override fun onResume() {
@@ -92,8 +97,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
             s.currentSong()?.let { updateMini(it) }
             btnMiniPlay.setImageResource(if (s.isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
         }
-        // Refresh favorites if on that tab
-        if (currentTab == 3) filter()
+        if (currentTab in listOf(3, 6, 7)) filter()
     }
 
     override fun onStop() {
@@ -108,10 +112,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     private fun askNotifPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-            != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQ_NOTIF)
-        }
+            != PackageManager.PERMISSION_GRANTED)
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQ_NOTIF)
     }
 
     private fun initViews() {
@@ -130,13 +132,18 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         tabSongs     = findViewById(R.id.tabSongs)
         tabAlbums    = findViewById(R.id.tabAlbums)
         tabArtists   = findViewById(R.id.tabArtists)
+        tabFolders   = findViewById(R.id.tabFolders)
+        tabPlaylists = findViewById(R.id.tabPlaylists)
         tabFavorites = findViewById(R.id.tabFavorites)
+        tabRecent    = findViewById(R.id.tabRecent)
+        tabMostPlayed= findViewById(R.id.tabMostPlayed)
 
         adapter = SongAdapter(emptyList()) { song, _ ->
-            val songs = if (currentTab == 3) FavoritesManager.getFavoriteSongs(allSongs) else allSongs
+            val songs = getTabSongs()
             val idx = songs.indexOfFirst { it.id == song.id }
             if (idx >= 0) {
                 PlayCountManager.increment(song.id)
+                RecentlyPlayedManager.add(song.id)
                 svc?.load(songs, idx)
                 adapter.setCurrentPlaying(song.id)
                 updateMini(song)
@@ -147,8 +154,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         rvSongs.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = this@MainActivity.adapter
-            setHasFixedSize(true)
-            itemAnimator = null
+            setHasFixedSize(true); itemAnimator = null
         }
 
         etSearch.addTextChangedListener(object : TextWatcher {
@@ -157,46 +163,55 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
             override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
         })
 
-        // Tab clicks
-        tabSongs.setOnClickListener     { selectTab(0) }
-        tabAlbums.setOnClickListener    { startActivity(Intent(this, AlbumsActivity::class.java)) }
-        tabArtists.setOnClickListener   { startActivity(Intent(this, ArtistsActivity::class.java)) }
-        tabFavorites.setOnClickListener { selectTab(3) }
+        // Tab clicks — direct activities or in-list tabs
+        tabSongs.setOnClickListener      { selectTab(0) }
+        tabAlbums.setOnClickListener     { startActivity(Intent(this, AlbumsActivity::class.java)) }
+        tabArtists.setOnClickListener    { startActivity(Intent(this, ArtistsActivity::class.java)) }
+        tabFolders.setOnClickListener    { startActivity(Intent(this, FoldersActivity::class.java)) }
+        tabPlaylists.setOnClickListener  { startActivity(Intent(this, PlaylistsActivity::class.java)) }
+        tabFavorites.setOnClickListener  { selectTab(3) }
+        tabRecent.setOnClickListener     { selectTab(6) }
+        tabMostPlayed.setOnClickListener { selectTab(7) }
 
         btnSort.setOnClickListener     { showSort() }
         btnSettings.setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
 
         btnMiniPlay.setOnClickListener {
             svc?.togglePlayPause()
-            val playing = svc?.isPlaying ?: false
-            btnMiniPlay.setImageResource(if (playing) R.drawable.ic_pause else R.drawable.ic_play)
+            btnMiniPlay.setImageResource(
+                if (svc?.isPlaying == true) R.drawable.ic_pause else R.drawable.ic_play)
         }
         btnMiniNext.setOnClickListener  { svc?.next() }
         btnMiniClose.setOnClickListener { svc?.stop(); miniPlayer.visibility = View.GONE }
         miniPlayer.setOnClickListener   { startActivity(Intent(this, NowPlayingActivity::class.java)) }
 
-        // Set initial tab
         selectTab(0)
     }
 
     private fun selectTab(tab: Int) {
         currentTab = tab
-        val tabs = listOf(tabSongs, tabAlbums, tabArtists, tabFavorites)
-        tabs.forEach {
-            it.setBackgroundResource(R.drawable.bg_tab_inactive)
-            it.setTextColor(0xAAFFFFFF.toInt())
+        val allTabs = listOf(tabSongs, tabAlbums, tabArtists, tabFolders,
+            tabPlaylists, tabFavorites, tabRecent, tabMostPlayed)
+        allTabs.forEach { it.setBackgroundResource(R.drawable.bg_tab_inactive); it.setTextColor(0xAAFFFFFF.toInt()) }
+        val active = when (tab) {
+            3 -> tabFavorites; 6 -> tabRecent; 7 -> tabMostPlayed; else -> tabSongs
         }
-        val active = when (tab) { 3 -> tabFavorites; else -> tabSongs }
         active.setBackgroundResource(R.drawable.bg_tab_active)
         active.setTextColor(0xFFFFFFFF.toInt())
         filter()
     }
 
+    private fun getTabSongs(): List<Song> = when (currentTab) {
+        3 -> FavoritesManager.getFavoriteSongs(allSongs)
+        6 -> RecentlyPlayedManager.getRecentSongs(allSongs)
+        7 -> allSongs.sortedByDescending { PlayCountManager.getCount(it.id) }.take(50)
+        else -> allSongs
+    }
+
     @Suppress("DEPRECATION")
     override fun onBackPressed() {
-        if (searchQuery.isNotEmpty()) {
-            etSearch.text.clear(); searchQuery = ""; filter()
-        } else super.onBackPressed()
+        if (searchQuery.isNotEmpty()) { etSearch.text.clear(); searchQuery = ""; filter() }
+        else super.onBackPressed()
     }
 
     private fun showSort() {
@@ -210,30 +225,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
             }.show()
     }
 
-    private fun showSleepTimer() {
-        val running = SleepTimerManager.isRunning
-        val options = arrayOf("15 minutes", "30 minutes", "45 minutes",
-            "60 minutes", "90 minutes",
-            if (running) "❌ Cancel (${SleepTimerManager.getFormattedTime()} left)" else "❌ Cancel Timer")
-        AlertDialog.Builder(this, R.style.SortDialogTheme)
-            .setTitle("⏱ Sleep Timer")
-            .setItems(options) { _, i ->
-                when (i) {
-                    0 -> startTimer(15); 1 -> startTimer(30); 2 -> startTimer(45)
-                    3 -> startTimer(60); 4 -> startTimer(90)
-                    5 -> { SleepTimerManager.cancel(); Toast.makeText(this, "Timer cancelled", Toast.LENGTH_SHORT).show() }
-                }
-            }.show()
-    }
-
-    private fun startTimer(mins: Int) {
-        SleepTimerManager.onFinish = { runOnUiThread { svc?.stop(); miniPlayer.visibility = View.GONE } }
-        SleepTimerManager.start(mins)
-        Toast.makeText(this, "Sleep timer set: $mins minutes", Toast.LENGTH_SHORT).show()
-    }
-
     private fun filter() {
-        var base = if (currentTab == 3) FavoritesManager.getFavoriteSongs(allSongs) else allSongs
+        var base = getTabSongs()
         if (searchQuery.isNotEmpty()) {
             base = base.filter {
                 it.title.contains(searchQuery, true) ||
@@ -241,7 +234,9 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
                 it.album.contains(searchQuery, true)
             }
         }
-        val sorted = when (currentSort) {
+        // Don't re-sort Recent and MostPlayed — they have their own order
+        val sorted = if (currentTab == 6 || currentTab == 7) base
+        else when (currentSort) {
             SortOption.A_TO_Z        -> base.sortedBy { it.title.lowercase() }
             SortOption.Z_TO_A        -> base.sortedByDescending { it.title.lowercase() }
             SortOption.NEWEST_FIRST  -> base.sortedByDescending { it.dateAdded }
@@ -251,8 +246,10 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         adapter.updateSongs(sorted)
         tvCount.text = when {
             searchQuery.isNotEmpty() -> "${sorted.size} / ${allSongs.size}"
-            currentTab == 3         -> "❤ ${sorted.size} favorites"
-            else                    -> "${allSongs.size} songs"
+            currentTab == 3 -> "❤ ${sorted.size} favorites"
+            currentTab == 6 -> "🕐 ${sorted.size} recent"
+            currentTab == 7 -> "🔥 Top ${sorted.size} played"
+            else -> "${allSongs.size} songs"
         }
     }
 
@@ -280,49 +277,44 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
                 contentResolver.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, cols,
                     "${MediaStore.Audio.Media.IS_MUSIC} != 0", null,
                     "${MediaStore.Audio.Media.TITLE} ASC")?.use { c ->
-                    val ci = c.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
-                    val ct = c.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
-                    val ca = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
-                    val cb = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
-                    val cd = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
-                    val cp = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
-                    val cdt= c.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED)
-                    while (c.moveToNext()) {
+                    val ci=c.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
+                    val ct=c.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
+                    val ca=c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
+                    val cb=c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
+                    val cd=c.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
+                    val cp=c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
+                    val cdt=c.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED)
+                    while(c.moveToNext()) {
                         try {
-                            val id = c.getLong(ci); val dur = c.getLong(cd); val aid = c.getLong(cp)
-                            if (dur > 0) list.add(Song(id,
-                                c.getString(ct) ?: "Unknown", c.getString(ca) ?: "Unknown Artist",
-                                c.getString(cb) ?: "Unknown Album", dur,
-                                ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id),
-                                ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), aid),
+                            val id=c.getLong(ci); val dur=c.getLong(cd); val aid=c.getLong(cp)
+                            if(dur>0) list.add(Song(id,
+                                c.getString(ct)?:"Unknown", c.getString(ca)?:"Unknown Artist",
+                                c.getString(cb)?:"Unknown Album", dur,
+                                ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,id),
+                                ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"),aid),
                                 c.getLong(cdt)))
-                        } catch (e: Exception) { }
+                        } catch(e:Exception){}
                     }
                 }
-            } catch (e: Exception) {
-                runOnUiThread { Toast.makeText(this, "Error loading songs", Toast.LENGTH_SHORT).show() }
-            }
-            runOnUiThread {
-                allSongs = list; filter()
-                svc?.currentSong()?.let { updateMini(it) }
-            }
+            } catch(e:Exception){ runOnUiThread{ Toast.makeText(this,"Error loading songs",Toast.LENGTH_SHORT).show() } }
+            runOnUiThread { allSongs=list; filter(); svc?.currentSong()?.let{ updateMini(it) } }
         }.start()
     }
 
     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-        svc = (service as MusicService.MusicBinder).getService(); bound = true
-        svc!!.currentSong()?.let { updateMini(it) }
-        btnMiniPlay.setImageResource(if (svc!!.isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
-        svc!!.onSongChange = { song -> runOnUiThread { updateMini(song); adapter.setCurrentPlaying(song.id) } }
-        svc!!.onPlayState  = { p    -> runOnUiThread { btnMiniPlay.setImageResource(if (p) R.drawable.ic_pause else R.drawable.ic_play) } }
+        svc=(service as MusicService.MusicBinder).getService(); bound=true
+        svc!!.currentSong()?.let{ updateMini(it) }
+        btnMiniPlay.setImageResource(if(svc!!.isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
+        svc!!.onSongChange={ song -> runOnUiThread{ updateMini(song); adapter.setCurrentPlaying(song.id) } }
+        svc!!.onPlayState={ p -> runOnUiThread{ btnMiniPlay.setImageResource(if(p) R.drawable.ic_pause else R.drawable.ic_play) } }
     }
 
     private fun updateMini(song: Song) {
-        miniPlayer.visibility = View.VISIBLE
-        tvMiniTitle.text = song.title; tvMiniArtist.text = song.artist
+        miniPlayer.visibility=View.VISIBLE
+        tvMiniTitle.text=song.title; tvMiniArtist.text=song.artist
         Glide.with(this).load(song.albumArtUri)
             .placeholder(R.drawable.ic_music_note).error(R.drawable.ic_music_note).into(ivMiniArt)
     }
 
-    override fun onServiceDisconnected(name: ComponentName?) { bound = false; svc = null }
+    override fun onServiceDisconnected(name: ComponentName?) { bound=false; svc=null }
 }

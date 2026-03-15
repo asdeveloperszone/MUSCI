@@ -34,6 +34,14 @@
             android:screenOrientation="portrait" android:parentActivityName=".MainActivity" />
         <activity android:name=".ArtistsActivity" android:exported="false"
             android:screenOrientation="portrait" android:parentActivityName=".MainActivity" />
+        <activity android:name=".FoldersActivity" android:exported="false"
+            android:screenOrientation="portrait" android:parentActivityName=".MainActivity" />
+        <activity android:name=".PlaylistsActivity" android:exported="false"
+            android:screenOrientation="portrait" android:parentActivityName=".MainActivity" />
+        <activity android:name=".PlaylistSongsActivity" android:exported="false"
+            android:screenOrientation="portrait" android:parentActivityName=".PlaylistsActivity" />
+        <activity android:name=".QueueActivity" android:exported="false"
+            android:screenOrientation="portrait" android:parentActivityName=".NowPlayingActivity" />
         <activity android:name=".AlbumSongsActivity" android:exported="false"
             android:screenOrientation="portrait" android:parentActivityName=".AlbumsActivity" />
         <activity android:name=".ArtistSongsActivity" android:exported="false"

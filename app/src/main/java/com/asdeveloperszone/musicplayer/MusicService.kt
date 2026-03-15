@@ -16,6 +16,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.palette.graphics.Palette
+import android.content.Context
 import android.media.audiofx.Equalizer
 import android.media.audiofx.BassBoost
 class MusicService : Service() {
@@ -362,5 +363,26 @@ class MusicService : Service() {
         try { equalizer?.release() } catch (e: Exception) { }
         try { bassBoost?.release() } catch (e: Exception) { }
         equalizer = null; bassBoost = null
+    }
+
+    // ── Queue Management ──────────────────────────────────────────────────────
+    fun getQueue(): List<Song> = queue.toList()
+    fun getCurrentIndex(): Int = index
+
+    fun moveQueueItem(from: Int, to: Int) {
+        if (from < 0 || to < 0 || from >= queue.size || to >= queue.size) return
+        val item = queue.removeAt(from)
+        queue.add(to, item)
+        // Update current index if needed
+        index = when {
+            from == index -> to
+            from < index && to >= index -> index - 1
+            from > index && to <= index -> index + 1
+            else -> index
+        }
+    }
+
+    fun jumpToQueueIndex(pos: Int) {
+        if (pos in queue.indices) { index = pos; play() }
     }
 }

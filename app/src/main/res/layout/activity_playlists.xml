@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg_dark">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
+        android:orientation="vertical">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:paddingHorizontal="16dp" android:background="@drawable/bg_appbar_gradient">
+            <ImageButton android:id="@+id/btnPlaylistsBack"
+                android:layout_width="40dp" android:layout_height="40dp"
+                android:src="@drawable/ic_arrow_back"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="@color/white" android:contentDescription="Back"/>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="PLAYLISTS" android:textColor="@color/white" android:textSize="18sp"
+                android:textStyle="bold" android:fontFamily="sans-serif-condensed"
+                android:layout_marginStart="12dp"/>
+        </LinearLayout>
+        <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvPlaylists"
+            android:layout_width="match_parent" android:layout_height="match_parent"
+            android:paddingTop="8dp" android:paddingBottom="80dp" android:clipToPadding="false"/>
+    </LinearLayout>
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabNewPlaylist"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:src="@drawable/ic_add"
+        app:backgroundTint="@color/red_primary"
+        android:tint="@color/white"
+        android:contentDescription="New Playlist"/>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

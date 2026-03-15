@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="64dp"
+    android:orientation="horizontal" android:gravity="center_vertical"
+    android:paddingHorizontal="12dp" android:paddingVertical="8dp">
+    <View android:id="@+id/viewQueuePlaying"
+        android:layout_width="3dp" android:layout_height="40dp"
+        android:layout_marginEnd="8dp" android:background="@color/red_primary"
+        android:visibility="invisible"/>
+    <ImageView android:id="@+id/ivQueueArt"
+        android:layout_width="46dp" android:layout_height="46dp"
+        android:scaleType="centerCrop" android:src="@drawable/ic_music_note"
+        android:background="@drawable/bg_album_art_mini"/>
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+        android:layout_weight="1" android:orientation="vertical" android:layout_marginHorizontal="12dp">
+        <TextView android:id="@+id/tvQueueTitle"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textColor="@color/white" android:textSize="13sp"
+            android:textStyle="bold" android:singleLine="true"/>
+        <TextView android:id="@+id/tvQueueArtist"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textColor="#88FFFFFF" android:textSize="12sp" android:singleLine="true"/>
+    </LinearLayout>
+    <ImageView android:id="@+id/ivDragHandle"
+        android:layout_width="24dp" android:layout_height="24dp"
+        android:src="@drawable/ic_drag_handle" android:tint="#55FFFFFF"/>
+</LinearLayout>
