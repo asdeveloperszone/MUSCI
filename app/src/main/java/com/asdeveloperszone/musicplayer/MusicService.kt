@@ -1,5 +1,6 @@
 package com.asdeveloperszone.musicplayer
 import android.app.*
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -146,6 +147,9 @@ class MusicService : Service() {
                 setOnErrorListener { _, w, e -> Log.e(TAG, "err w=$w e=$e"); main.post { fire { onPlayState?.invoke(false) } }; true }
             }
             fire { onSongChange?.invoke(song); onPlayState?.invoke(true) }
+            initEqualizer()
+            try { RecentlyPlayedManager.add(song.id) } catch (e: Exception) { }
+            try { MusicWidget.updateWidgetData(applicationContext, song.title, song.artist, true) } catch (e: Exception) { }
             initEqualizer()
             updateMeta(song); updateSession(); postNotif(song)
         } catch (e: Exception) { Log.e(TAG, "play: ${e.message}"); fire { onPlayState?.invoke(false) } }
