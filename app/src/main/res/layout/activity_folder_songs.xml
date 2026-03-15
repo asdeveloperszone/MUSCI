@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_dark">
+
     <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
         android:orientation="vertical">
+
         <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
             android:orientation="horizontal" android:gravity="center_vertical"
             android:paddingHorizontal="16dp" android:background="@drawable/bg_appbar_gradient">
@@ -21,12 +24,14 @@
                 android:fontFamily="sans-serif-condensed"
                 android:layout_marginStart="12dp" android:singleLine="true"/>
         </LinearLayout>
+
         <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvSongs"
             android:layout_width="match_parent" android:layout_height="0dp"
             android:layout_weight="1"
             android:paddingTop="8dp" android:paddingBottom="68dp"
             android:clipToPadding="false"/>
     </LinearLayout>
+
     <!-- Mini Player -->
     <LinearLayout android:id="@+id/miniPlayer"
         android:layout_width="match_parent" android:layout_height="64dp"
@@ -35,10 +40,12 @@
         android:orientation="horizontal"
         android:paddingHorizontal="12dp" android:gravity="center_vertical"
         android:elevation="12dp" android:visibility="gone">
+
         <ImageView android:id="@+id/ivMiniArt"
             android:layout_width="44dp" android:layout_height="44dp"
             android:scaleType="centerCrop" android:src="@drawable/ic_music_note"
             android:background="@drawable/bg_album_art_mini"/>
+
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:orientation="vertical"
             android:layout_marginHorizontal="10dp">
@@ -50,21 +57,25 @@
                 android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:textColor="#BBFFFFFF" android:textSize="11sp" android:singleLine="true"/>
         </LinearLayout>
+
         <ImageButton android:id="@+id/btnMiniPrev"
             android:layout_width="34dp" android:layout_height="34dp"
             android:src="@drawable/ic_skip_previous"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:tint="@color/white" android:contentDescription="Prev"/>
+
         <ImageButton android:id="@+id/btnMiniPlayPause"
             android:layout_width="36dp" android:layout_height="36dp"
             android:src="@drawable/ic_play"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:tint="@color/white" android:contentDescription="Play Pause"/>
+
         <ImageButton android:id="@+id/btnMiniNext"
             android:layout_width="34dp" android:layout_height="34dp"
             android:src="@drawable/ic_skip_next"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:tint="@color/white" android:contentDescription="Next"/>
+
         <ImageButton android:id="@+id/btnMiniClose"
             android:layout_width="30dp" android:layout_height="30dp"
             android:src="@drawable/ic_close"
@@ -72,4 +83,5 @@
             android:tint="#AAFFFFFF" android:layout_marginStart="4dp"
             android:contentDescription="Close"/>
     </LinearLayout>
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

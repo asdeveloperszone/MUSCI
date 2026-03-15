@@ -141,20 +141,31 @@ class SongInfoActivity : AppCompatActivity(), ServiceConnection {
 
     private fun applyRingtone(song: Song, type: Int, label: String) {
         try {
-            // Update MediaStore flags
             val cv = ContentValues().apply {
                 put(MediaStore.Audio.Media.IS_RINGTONE,     type == RingtoneManager.TYPE_RINGTONE)
                 put(MediaStore.Audio.Media.IS_NOTIFICATION, type == RingtoneManager.TYPE_NOTIFICATION)
                 put(MediaStore.Audio.Media.IS_ALARM,        type == RingtoneManager.TYPE_ALARM)
             }
-            // Use the external content URI with the song ID
             val uri = ContentUris.withAppendedId(
                 MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, song.id)
-            contentResolver.update(uri, cv, null, null)
-            RingtoneManager.setActualDefaultRingtoneUri(this, type, uri)
+            try { contentResolver.update(uri, cv, null, null) } catch (e: Exception) { }
+            Settings.System.putString(contentResolver,
+                when (type) {
+                    RingtoneManager.TYPE_NOTIFICATION -> Settings.System.NOTIFICATION_SOUND
+                    RingtoneManager.TYPE_ALARM        -> Settings.System.ALARM_ALERT
+                    else                              -> Settings.System.RINGTONE
+                }, uri.toString())
             Toast.makeText(this, "\"${song.title}\" set as $label ✓", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            Toast.makeText(this, "Failed to set ringtone: ${e.message}", Toast.LENGTH_LONG).show()
+            // Fallback to RingtoneManager
+            try {
+                val uri = ContentUris.withAppendedId(
+                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, song.id)
+                RingtoneManager.setActualDefaultRingtoneUri(this, type, uri)
+                Toast.makeText(this, "\"${song.title}\" set as $label ✓", Toast.LENGTH_SHORT).show()
+            } catch (e2: Exception) {
+                Toast.makeText(this, "Error: ${e2.message}", Toast.LENGTH_LONG).show()
+            }
         }
     }
 

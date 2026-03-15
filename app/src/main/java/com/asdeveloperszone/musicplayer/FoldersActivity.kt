@@ -26,9 +26,10 @@ class FoldersActivity : AppCompatActivity(), ServiceConnection {
         rv.layoutManager = LinearLayoutManager(this)
         val folders = loadFolders()
         rv.adapter = FolderAdapter(folders) { folder ->
-            val intent = Intent(this, AlbumSongsActivity::class.java).apply {
-                putExtra("folder_songs", folder.songs.map { it.id }.toLongArray())
-                putExtra("album_name", folder.name)
+            // Store songs in companion and open activity
+            FolderSongsCache.songs = folder.songs
+            val intent = Intent(this, FolderSongsActivity::class.java).apply {
+                putExtra("folder_name", folder.name)
             }
             startActivity(intent)
         }

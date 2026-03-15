@@ -15,7 +15,6 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.palette.graphics.Palette
-import android.content.Context
 import android.media.audiofx.Equalizer
 import android.media.audiofx.BassBoost
 class MusicService : Service() {
@@ -218,15 +217,17 @@ class MusicService : Service() {
             .setSmallIcon(R.drawable.ic_music_note).setLargeIcon(art)
             .setContentIntent(PendingIntent.getActivity(this, 0,
                 Intent(this, NowPlayingActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                 }, f))
+            .setFullScreenIntent(PendingIntent.getActivity(this, 99,
+                Intent(this, NowPlayingActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                }, f), true)
             .addAction(R.drawable.ic_skip_previous, "Prev",  svc(ACTION_PREV, 1))
-            .addAction(R.drawable.ic_rewind,        "-10s",  svc(ACTION_REWIND, 2))
             .addAction(if (playing) R.drawable.ic_pause else R.drawable.ic_play, if (playing) "Pause" else "Play", svc(ACTION_PLAY_PAUSE, 3))
-            .addAction(R.drawable.ic_forward,       "+10s",  svc(ACTION_FORWARD, 4))
             .addAction(R.drawable.ic_skip_next,     "Next",  svc(ACTION_NEXT, 5))
             .addAction(R.drawable.ic_close,         "Stop",  svc(ACTION_STOP, 6))
-            .setStyle(androidx.media.app.NotificationCompat.MediaStyle().setMediaSession(mediaSession?.sessionToken).setShowActionsInCompactView(0, 2, 4))
+            .setStyle(androidx.media.app.NotificationCompat.MediaStyle().setMediaSession(mediaSession?.sessionToken).setShowActionsInCompactView(0, 1, 2, 3))
             .setPriority(NotificationCompat.PRIORITY_LOW).setOnlyAlertOnce(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC).setOngoing(playing).setAutoCancel(false)
             .apply { art?.let { b -> try { Palette.from(b).generate { p -> p?.dominantSwatch?.rgb?.let { setColor(it) } } } catch (e: Exception) { } } }

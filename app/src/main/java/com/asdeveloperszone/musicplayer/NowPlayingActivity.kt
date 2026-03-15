@@ -80,18 +80,19 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
     private val SWIPE_THRESHOLD = 120f
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Show full screen on lock screen like Samsung Music
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            setShowWhenLocked(true)
-            setTurnScreenOn(true)
-        }
+        // Full screen on lock screen - exactly like Samsung Music
         @Suppress("DEPRECATION")
         window.addFlags(
             android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
             android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-            android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
-            android.view.WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+            android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
         )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+            val km = getSystemService(KEYGUARD_SERVICE) as android.app.KeyguardManager
+            km.requestDismissKeyguard(this, null)
+        }
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_now_playing)
 

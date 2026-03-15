@@ -204,11 +204,28 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         filter()
     }
 
-    private fun getTabSongs(): List<Song> = when (currentTab) {
-        3 -> FavoritesManager.getFavoriteSongs(allSongs)
-        6 -> RecentlyPlayedManager.getRecentSongs(allSongs)
-        7 -> allSongs.sortedByDescending { PlayCountManager.getCount(it.id) }.take(50)
-        else -> allSongs
+    private fun getTabSongs(): List<Song> {
+        // Must return the SAME sorted list currently displayed
+        var base = when (currentTab) {
+            3 -> FavoritesManager.getFavoriteSongs(allSongs)
+            6 -> RecentlyPlayedManager.getRecentSongs(allSongs)
+            7 -> return allSongs.sortedByDescending { PlayCountManager.getCount(it.id) }.take(50)
+            else -> allSongs
+        }
+        if (searchQuery.isNotEmpty()) {
+            base = base.filter {
+                it.title.contains(searchQuery, true) ||
+                it.artist.contains(searchQuery, true) ||
+                it.album.contains(searchQuery, true)
+            }
+        }
+        return when (currentSort) {
+            SortOption.A_TO_Z        -> base.sortedBy { it.title.lowercase() }
+            SortOption.Z_TO_A        -> base.sortedByDescending { it.title.lowercase() }
+            SortOption.NEWEST_FIRST  -> base.sortedByDescending { it.dateAdded }
+            SortOption.OLDEST_FIRST  -> base.sortedBy { it.dateAdded }
+            SortOption.MOST_LISTENED -> base.sortedByDescending { PlayCountManager.getCount(it.id) }
+        }
     }
 
     @Suppress("DEPRECATION")
