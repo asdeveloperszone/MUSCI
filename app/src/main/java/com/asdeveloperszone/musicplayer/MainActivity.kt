@@ -15,7 +15,6 @@ import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -24,319 +23,288 @@ import com.bumptech.glide.Glide
 
 class MainActivity : AppCompatActivity(), ServiceConnection {
 
-    private lateinit var rvSongs: RecyclerView
+    private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: SongAdapter
     private lateinit var etSearch: EditText
-    private lateinit var tvCount: TextView
+    private lateinit var tvSongCount: TextView
     private lateinit var miniPlayer: View
     private lateinit var ivMiniArt: ImageView
     private lateinit var tvMiniTitle: TextView
     private lateinit var tvMiniArtist: TextView
-    private lateinit var btnMiniPrev: ImageButton
-    private lateinit var btnMiniPlay: ImageButton
+    private lateinit var btnMiniPlayPause: ImageButton
     private lateinit var btnMiniNext: ImageButton
     private lateinit var btnMiniClose: ImageButton
     private lateinit var btnSort: ImageButton
-    private lateinit var btnSettings: ImageButton
 
-    // Tabs
-    private lateinit var tabSongs: TextView
-    private lateinit var tabAlbums: TextView
-    private lateinit var tabArtists: TextView
-    private lateinit var tabFolders: TextView
-    private lateinit var tabPlaylists: TextView
-    private lateinit var tabFavorites: TextView
-    private lateinit var tabRecent: TextView
-    private lateinit var tabMostPlayed: TextView
-
-    private var svc: MusicService? = null
-    private var bound = false
+    private var musicService: MusicService? = null
+    private var isBound = false
     private var allSongs: List<Song> = emptyList()
     private var currentSort = SortOption.A_TO_Z
     private var searchQuery = ""
-    private var currentTab = 0 // 0=Songs,3=Favorites,6=Recent,7=MostPlayed
-    private lateinit var prefs: SharedPreferences
-    private lateinit var settingsPrefs: SharedPreferences
 
     companion object {
-        private const val REQ_AUDIO = 100
-        private const val REQ_NOTIF = 101
+        private const val PERMISSION_REQUEST_CODE = 100
+        private const val NOTIFICATION_PERMISSION_CODE = 101
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        settingsPrefs = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
-        AppCompatDelegate.setDefaultNightMode(
-            if (settingsPrefs.getBoolean("dark_theme", true))
-                AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO)
-
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        prefs = getSharedPreferences("music_settings", Context.MODE_PRIVATE)
-        currentSort = SortOption.valueOf(
-            prefs.getString("sort_option", SortOption.A_TO_Z.name) ?: SortOption.A_TO_Z.name)
-
         PlayCountManager.init(this)
-        FavoritesManager.init(this)
-        RecentlyPlayedManager.init(this)
-        PlaylistManager.init(this)
-        initViews()
-        checkAudioPermission()
-        askNotifPermission()
-        BatteryOptimizationHelper.requestIfNeeded(this)
+        setupViews()
+        checkPermissions()
+        requestNotificationPermission()
     }
 
     override fun onStart() {
         super.onStart()
-        val i = Intent(this, MusicService::class.java)
-        startService(i); bindService(i, this, Context.BIND_AUTO_CREATE)
-    }
-
-    override fun onResume() {
-        super.onResume()
-        svc?.let { s ->
-            s.currentSong()?.let { updateMini(it) }
-            btnMiniPlay.setImageResource(if (s.isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
-        }
-        if (currentTab in listOf(3, 6, 7)) filter()
+        val intent = Intent(this, MusicService::class.java)
+        startService(intent)
+        bindService(intent, this, Context.BIND_AUTO_CREATE)
     }
 
     override fun onStop() {
         super.onStop()
-        if (bound) {
-            svc?.onSongChange = null; svc?.onPlayState = null
-            try { unbindService(this) } catch (e: Exception) { }
-            bound = false; svc = null
+        if (isBound) {
+            musicService?.onSongChangeListener = null
+            musicService?.onPlayStateChangeListener = null
+            unbindService(this)
+            isBound = false
         }
     }
 
-    private fun askNotifPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-            != PackageManager.PERMISSION_GRANTED)
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQ_NOTIF)
+    override fun onResume() {
+        super.onResume()
+        musicService?.getCurrentSong()?.let { song ->
+            updateMiniPlayer(song)
+            btnMiniPlayPause.setImageResource(
+                if (musicService?.isCurrentlyPlaying() == true) R.drawable.ic_pause else R.drawable.ic_play
+            )
+        }
     }
 
-    private fun initViews() {
-        rvSongs      = findViewById(R.id.recyclerView)
-        etSearch     = findViewById(R.id.etSearch)
-        tvCount      = findViewById(R.id.tvSongCount)
-        miniPlayer   = findViewById(R.id.miniPlayer)
-        ivMiniArt    = findViewById(R.id.ivMiniArt)
-        tvMiniTitle  = findViewById(R.id.tvMiniTitle)
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    NOTIFICATION_PERMISSION_CODE
+                )
+            }
+        }
+    }
+
+    private fun setupViews() {
+        recyclerView = findViewById(R.id.recyclerView)
+        etSearch = findViewById(R.id.etSearch)
+        tvSongCount = findViewById(R.id.tvSongCount)
+        miniPlayer = findViewById(R.id.miniPlayer)
+        ivMiniArt = findViewById(R.id.ivMiniArt)
+        tvMiniTitle = findViewById(R.id.tvMiniTitle)
         tvMiniArtist = findViewById(R.id.tvMiniArtist)
-        btnMiniPrev  = findViewById(R.id.btnMiniPrev)
-        btnMiniPlay  = findViewById(R.id.btnMiniPlayPause)
-        btnMiniNext  = findViewById(R.id.btnMiniNext)
+        btnMiniPlayPause = findViewById(R.id.btnMiniPlayPause)
+        btnMiniNext = findViewById(R.id.btnMiniNext)
         btnMiniClose = findViewById(R.id.btnMiniClose)
-        btnSort      = findViewById(R.id.btnSort)
-        btnSettings  = findViewById(R.id.btnSettings)
-        tabSongs     = findViewById(R.id.tabSongs)
-        tabAlbums    = findViewById(R.id.tabAlbums)
-        tabArtists   = findViewById(R.id.tabArtists)
-        tabFolders   = findViewById(R.id.tabFolders)
-        tabPlaylists = findViewById(R.id.tabPlaylists)
-        tabFavorites = findViewById(R.id.tabFavorites)
-        tabRecent    = findViewById(R.id.tabRecent)
-        tabMostPlayed= findViewById(R.id.tabMostPlayed)
+        btnSort = findViewById(R.id.btnSort)
 
         adapter = SongAdapter(emptyList()) { song, _ ->
-            val songs = getTabSongs()
-            val idx = songs.indexOfFirst { it.id == song.id }
-            if (idx >= 0) {
-                PlayCountManager.increment(song.id)
-                RecentlyPlayedManager.add(song.id)
-                svc?.load(songs, idx)
-                adapter.setCurrentPlaying(song.id)
-                updateMini(song)
-                btnMiniPlay.setImageResource(R.drawable.ic_pause)
+            try {
+                val realIndex = allSongs.indexOfFirst { it.id == song.id }
+                if (realIndex >= 0) {
+                    PlayCountManager.increment(song.id)
+                    musicService?.setSongList(allSongs, realIndex)
+                    adapter.setCurrentPlaying(song.id)
+                    updateMiniPlayer(song)
+                    btnMiniPlayPause.setImageResource(R.drawable.ic_pause)
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this, "Could not play song", Toast.LENGTH_SHORT).show()
             }
         }
 
-        rvSongs.apply {
-            layoutManager = LinearLayoutManager(this@MainActivity)
-            adapter = this@MainActivity.adapter
-            setHasFixedSize(true); itemAnimator = null
-        }
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = adapter
+        recyclerView.setHasFixedSize(true)
+        recyclerView.itemAnimator = null
 
         etSearch.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) { searchQuery = s?.toString() ?: ""; filter() }
-            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
-            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                searchQuery = s?.toString() ?: ""
+                applyFilterAndSort()
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
-        // Tab clicks — direct activities or in-list tabs
-        tabSongs.setOnClickListener      { selectTab(0) }
-        tabAlbums.setOnClickListener     { startActivity(Intent(this, AlbumsActivity::class.java)) }
-        tabArtists.setOnClickListener    { startActivity(Intent(this, ArtistsActivity::class.java)) }
-        tabFolders.setOnClickListener    { startActivity(Intent(this, FoldersActivity::class.java)) }
-        tabPlaylists.setOnClickListener  { startActivity(Intent(this, PlaylistsActivity::class.java)) }
-        tabFavorites.setOnClickListener  { selectTab(3) }
-        tabRecent.setOnClickListener     { selectTab(6) }
-        tabMostPlayed.setOnClickListener { selectTab(7) }
-
-        btnSort.setOnClickListener     { showSort() }
-        btnSettings.setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
-
-        btnMiniPrev.setOnClickListener  { svc?.previous() }
-        btnMiniPlay.setOnClickListener {
-            svc?.togglePlayPause()
-            btnMiniPlay.setImageResource(
-                if (svc?.isPlaying == true) R.drawable.ic_pause else R.drawable.ic_play)
+        btnSort.setOnClickListener { showSortDialog() }
+        btnMiniPlayPause.setOnClickListener { musicService?.togglePlayPause() }
+        btnMiniNext.setOnClickListener { musicService?.playNext() }
+        btnMiniClose.setOnClickListener {
+            try { musicService?.stopMusic() } catch (e: Exception) { }
+            miniPlayer.visibility = View.GONE
         }
-        btnMiniNext.setOnClickListener  { svc?.next() }
-        btnMiniClose.setOnClickListener { svc?.stop(); miniPlayer.visibility = View.GONE }
-        miniPlayer.setOnClickListener   { startActivity(Intent(this, NowPlayingActivity::class.java)) }
-
-        selectTab(0)
-    }
-
-    private fun selectTab(tab: Int) {
-        currentTab = tab
-        val allTabs = listOf(tabSongs, tabAlbums, tabArtists, tabFolders,
-            tabPlaylists, tabFavorites, tabRecent, tabMostPlayed)
-        allTabs.forEach { it.setBackgroundResource(R.drawable.bg_tab_inactive); it.setTextColor(0xAAFFFFFF.toInt()) }
-        val active = when (tab) {
-            3 -> tabFavorites; 6 -> tabRecent; 7 -> tabMostPlayed; else -> tabSongs
-        }
-        active.setBackgroundResource(R.drawable.bg_tab_active)
-        active.setTextColor(0xFFFFFFFF.toInt())
-        filter()
-    }
-
-    private fun getTabSongs(): List<Song> {
-        // Must return the SAME sorted list currently displayed
-        var base = when (currentTab) {
-            3 -> FavoritesManager.getFavoriteSongs(allSongs)
-            6 -> RecentlyPlayedManager.getRecentSongs(allSongs)
-            7 -> return allSongs.sortedByDescending { PlayCountManager.getCount(it.id) }.take(50)
-            else -> allSongs
-        }
-        if (searchQuery.isNotEmpty()) {
-            base = base.filter {
-                it.title.contains(searchQuery, true) ||
-                it.artist.contains(searchQuery, true) ||
-                it.album.contains(searchQuery, true)
-            }
-        }
-        return when (currentSort) {
-            SortOption.A_TO_Z        -> base.sortedBy { it.title.lowercase() }
-            SortOption.Z_TO_A        -> base.sortedByDescending { it.title.lowercase() }
-            SortOption.NEWEST_FIRST  -> base.sortedByDescending { it.dateAdded }
-            SortOption.OLDEST_FIRST  -> base.sortedBy { it.dateAdded }
-            SortOption.MOST_LISTENED -> base.sortedByDescending { PlayCountManager.getCount(it.id) }
+        miniPlayer.setOnClickListener {
+            try { startActivity(Intent(this, NowPlayingActivity::class.java)) }
+            catch (e: Exception) { }
         }
     }
 
     @Suppress("DEPRECATION")
     override fun onBackPressed() {
-        if (searchQuery.isNotEmpty()) { etSearch.text.clear(); searchQuery = ""; filter() }
-        else super.onBackPressed()
+        if (searchQuery.isNotEmpty()) {
+            etSearch.text.clear()
+            searchQuery = ""
+            applyFilterAndSort()
+        } else {
+            super.onBackPressed()
+        }
     }
 
-    private fun showSort() {
-        val labels = SortOption.values().map { it.label }.toTypedArray()
+    private fun showSortDialog() {
+        val options = SortOption.values().map { it.label }.toTypedArray()
         AlertDialog.Builder(this, R.style.SortDialogTheme)
             .setTitle("Sort Songs")
-            .setSingleChoiceItems(labels, SortOption.values().indexOf(currentSort)) { d, i ->
-                currentSort = SortOption.values()[i]
-                prefs.edit().putString("sort_option", currentSort.name).apply()
-                filter(); d.dismiss()
-            }.show()
-    }
-
-    private fun filter() {
-        var base = getTabSongs()
-        if (searchQuery.isNotEmpty()) {
-            base = base.filter {
-                it.title.contains(searchQuery, true) ||
-                it.artist.contains(searchQuery, true) ||
-                it.album.contains(searchQuery, true)
+            .setSingleChoiceItems(options, SortOption.values().indexOf(currentSort)) { dialog, which ->
+                currentSort = SortOption.values()[which]
+                applyFilterAndSort()
+                dialog.dismiss()
             }
-        }
-        // Don't re-sort Recent and MostPlayed — they have their own order
-        val sorted = if (currentTab == 6 || currentTab == 7) base
-        else when (currentSort) {
-            SortOption.A_TO_Z        -> base.sortedBy { it.title.lowercase() }
-            SortOption.Z_TO_A        -> base.sortedByDescending { it.title.lowercase() }
-            SortOption.NEWEST_FIRST  -> base.sortedByDescending { it.dateAdded }
-            SortOption.OLDEST_FIRST  -> base.sortedBy { it.dateAdded }
-            SortOption.MOST_LISTENED -> base.sortedByDescending { PlayCountManager.getCount(it.id) }
-        }
-        adapter.updateSongs(sorted)
-        tvCount.text = when {
-            searchQuery.isNotEmpty() -> "${sorted.size} / ${allSongs.size}"
-            currentTab == 3 -> "❤ ${sorted.size} favorites"
-            currentTab == 6 -> "🕐 ${sorted.size} recent"
-            currentTab == 7 -> "🔥 Top ${sorted.size} played"
-            else -> "${allSongs.size} songs"
-        }
+            .show()
     }
 
-    private fun checkAudioPermission() {
-        val perm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-            Manifest.permission.READ_MEDIA_AUDIO else Manifest.permission.READ_EXTERNAL_STORAGE
-        if (ContextCompat.checkSelfPermission(this, perm) == PackageManager.PERMISSION_GRANTED)
+    private fun applyFilterAndSort() {
+        var list = if (searchQuery.isEmpty()) allSongs
+        else allSongs.filter {
+            it.title.contains(searchQuery, ignoreCase = true) ||
+            it.artist.contains(searchQuery, ignoreCase = true) ||
+            it.album.contains(searchQuery, ignoreCase = true)
+        }
+        list = when (currentSort) {
+            SortOption.A_TO_Z       -> list.sortedBy { it.title.lowercase() }
+            SortOption.Z_TO_A       -> list.sortedByDescending { it.title.lowercase() }
+            SortOption.NEWEST_FIRST -> list.sortedByDescending { it.dateAdded }
+            SortOption.OLDEST_FIRST -> list.sortedBy { it.dateAdded }
+            SortOption.MOST_LISTENED -> list.sortedByDescending { PlayCountManager.getCount(it.id) }
+        }
+        adapter.updateSongs(list)
+        tvSongCount.text = if (searchQuery.isEmpty()) "${allSongs.size} songs"
+                           else "${list.size} / ${allSongs.size}"
+    }
+
+    private fun checkPermissions() {
+        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+            Manifest.permission.READ_MEDIA_AUDIO
+        else Manifest.permission.READ_EXTERNAL_STORAGE
+
+        if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED) {
             loadSongs()
-        else ActivityCompat.requestPermissions(this, arrayOf(perm), REQ_AUDIO)
+        } else {
+            ActivityCompat.requestPermissions(this, arrayOf(permission), PERMISSION_REQUEST_CODE)
+        }
     }
 
-    override fun onRequestPermissionsResult(rc: Int, p: Array<String>, r: IntArray) {
-        super.onRequestPermissionsResult(rc, p, r)
-        if (rc == REQ_AUDIO && r.isNotEmpty() && r[0] == PackageManager.PERMISSION_GRANTED) loadSongs()
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == PERMISSION_REQUEST_CODE && grantResults.isNotEmpty() &&
+            grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            loadSongs()
+        }
     }
 
     private fun loadSongs() {
         Thread {
-            val list = mutableListOf<Song>()
+            val songs = mutableListOf<Song>()
             try {
-                val cols = arrayOf(MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE,
+                val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+                val projection = arrayOf(
+                    MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE,
                     MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.ALBUM,
                     MediaStore.Audio.Media.DURATION, MediaStore.Audio.Media.ALBUM_ID,
-                    MediaStore.Audio.Media.DATE_ADDED)
-                contentResolver.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, cols,
-                    "${MediaStore.Audio.Media.IS_MUSIC} != 0", null,
-                    "${MediaStore.Audio.Media.TITLE} ASC")?.use { c ->
-                    val ci=c.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
-                    val ct=c.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
-                    val ca=c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
-                    val cb=c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
-                    val cd=c.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
-                    val cp=c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
-                    val cdt=c.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED)
-                    while(c.moveToNext()) {
+                    MediaStore.Audio.Media.DATE_ADDED
+                )
+                val cursor: Cursor? = contentResolver.query(
+                    uri, projection,
+                    "${MediaStore.Audio.Media.IS_MUSIC} != 0",
+                    null, "${MediaStore.Audio.Media.TITLE} ASC"
+                )
+                cursor?.use {
+                    val idCol      = it.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
+                    val titleCol   = it.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
+                    val artistCol  = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
+                    val albumCol   = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
+                    val durCol     = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
+                    val albumIdCol = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
+                    val dateCol    = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED)
+                    while (it.moveToNext()) {
                         try {
-                            val id=c.getLong(ci); val dur=c.getLong(cd); val aid=c.getLong(cp)
-                            if(dur>0) list.add(Song(id,
-                                c.getString(ct)?:"Unknown", c.getString(ca)?:"Unknown Artist",
-                                c.getString(cb)?:"Unknown Album", dur,
-                                ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,id),
-                                ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"),aid),
-                                c.getLong(cdt)))
-                        } catch(e:Exception){}
+                            val id = it.getLong(idCol)
+                            val dur = it.getLong(durCol)
+                            val albumId = it.getLong(albumIdCol)
+                            if (dur > 0) songs.add(Song(
+                                id = id,
+                                title = it.getString(titleCol) ?: "Unknown",
+                                artist = it.getString(artistCol) ?: "Unknown Artist",
+                                album = it.getString(albumCol) ?: "Unknown Album",
+                                duration = dur,
+                                uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id),
+                                albumArtUri = ContentUris.withAppendedId(
+                                    Uri.parse("content://media/external/audio/albumart"), albumId),
+                                dateAdded = it.getLong(dateCol)
+                            ))
+                        } catch (e: Exception) { }
                     }
                 }
-            } catch(e:Exception){ runOnUiThread{ Toast.makeText(this,"Error loading songs",Toast.LENGTH_SHORT).show() } }
-            runOnUiThread { allSongs=list; filter(); svc?.currentSong()?.let{ updateMini(it) } }
+            } catch (e: Exception) {
+                runOnUiThread { Toast.makeText(this, "Error loading songs", Toast.LENGTH_SHORT).show() }
+            }
+            runOnUiThread {
+                allSongs = songs
+                applyFilterAndSort()
+                tvSongCount.text = "${songs.size} songs"
+                musicService?.getCurrentSong()?.let { updateMiniPlayer(it) }
+            }
         }.start()
     }
 
     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-        svc=(service as MusicService.MusicBinder).getService(); bound=true
         try {
-            svc?.currentSong()?.let{ updateMini(it) }
-            btnMiniPlay.setImageResource(if(svc?.isPlaying == true) R.drawable.ic_pause else R.drawable.ic_play)
-            svc?.onSongChange={ song -> runOnUiThread{ updateMini(song); adapter.setCurrentPlaying(song.id) } }
-            svc?.onPlayState={ p -> runOnUiThread{ btnMiniPlay.setImageResource(if(p) R.drawable.ic_pause else R.drawable.ic_play) } }
+            musicService = (service as MusicService.MusicBinder).getService()
+            isBound = true
+            musicService?.getCurrentSong()?.let { song -> updateMiniPlayer(song) }
+            musicService?.onSongChangeListener = { song ->
+                runOnUiThread {
+                    try {
+                        updateMiniPlayer(song)
+                        adapter.setCurrentPlaying(song.id)
+                    } catch (e: Exception) { }
+                }
+            }
+            musicService?.onPlayStateChangeListener = { playing ->
+                runOnUiThread {
+                    try {
+                        btnMiniPlayPause.setImageResource(
+                            if (playing) R.drawable.ic_pause else R.drawable.ic_play)
+                    } catch (e: Exception) { }
+                }
+            }
         } catch (e: Exception) { }
     }
 
-    private fun updateMini(song: Song) {
-        miniPlayer.visibility=View.VISIBLE
-        tvMiniTitle.text=song.title; tvMiniArtist.text=song.artist
-        Glide.with(this).load(song.albumArtUri)
-            .placeholder(R.drawable.ic_music_note).error(R.drawable.ic_music_note).into(ivMiniArt)
+    private fun updateMiniPlayer(song: Song) {
+        miniPlayer.visibility = View.VISIBLE
+        tvMiniTitle.text = song.title
+        tvMiniArtist.text = song.artist
+        Glide.with(this)
+            .load(song.albumArtUri)
+            .placeholder(R.drawable.ic_music_note)
+            .error(R.drawable.ic_music_note)
+            .into(ivMiniArt)
     }
 
-    override fun onServiceDisconnected(name: ComponentName?) { bound=false; svc=null }
+    override fun onServiceDisconnected(name: ComponentName?) {
+        isBound = false
+        musicService = null
+    }
 }

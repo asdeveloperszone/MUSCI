@@ -1,9 +1,23 @@
 package com.asdeveloperszone.musicplayer
+
 import android.content.Context
 import android.content.SharedPreferences
+
 object PlayCountManager {
+
+    private const val PREFS_NAME = "play_counts"
     private lateinit var prefs: SharedPreferences
-    fun init(c: Context) { prefs = c.getSharedPreferences("play_counts", Context.MODE_PRIVATE) }
-    fun increment(id: Long) { prefs.edit().putInt(id.toString(), getCount(id)+1).apply() }
-    fun getCount(id: Long): Int = prefs.getInt(id.toString(), 0)
+
+    fun init(context: Context) {
+        prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    }
+
+    fun increment(songId: Long) {
+        val current = prefs.getInt(songId.toString(), 0)
+        prefs.edit().putInt(songId.toString(), current + 1).apply()
+    }
+
+    fun getCount(songId: Long): Int {
+        return prefs.getInt(songId.toString(), 0)
+    }
 }
