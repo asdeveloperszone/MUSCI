@@ -173,15 +173,6 @@
                 android:drawablePadding="8dp"
                 android:layout_marginBottom="10dp"/>
 
-            <Button android:id="@+id/btnSetRingtone"
-                android:layout_width="match_parent" android:layout_height="48dp"
-                android:text="Set as Ringtone / Alarm"
-                android:textColor="@color/white"
-                android:backgroundTint="#1A1A1A"
-                android:drawableStart="@drawable/ic_ringtone"
-                android:drawablePadding="8dp"
-                android:layout_marginBottom="10dp"/>
-
             <Button android:id="@+id/btnDeleteSong"
                 android:layout_width="match_parent" android:layout_height="48dp"
                 android:text="Delete Song"

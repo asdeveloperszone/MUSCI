@@ -80,19 +80,23 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
     private val SWIPE_THRESHOLD = 120f
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Full screen on lock screen - exactly like Samsung Music
+        // Full screen over lock screen — Samsung Music style
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        }
         @Suppress("DEPRECATION")
         window.addFlags(
             android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
             android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-            android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+            android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
+            android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN
         )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            setShowWhenLocked(true)
-            setTurnScreenOn(true)
-            val km = getSystemService(KEYGUARD_SERVICE) as android.app.KeyguardManager
-            km.requestDismissKeyguard(this, null)
-        }
+        // Make it truly full screen
+        window.decorView.systemUiVisibility = (
+            android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+            android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+        )
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_now_playing)
 
@@ -232,9 +236,18 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
             btnShuffle.alpha = if (s.isShuffle) 1f else 0.4f
             syncRepeat(s.repeatMode); syncPlayBtn(s.isPlaying)
 
-            // Attach visualizer safely
+            // Attach visualizer - needs RECORD_AUDIO permission
             val sessionId = s.getAudioSessionId()
-            if (sessionId != 0) try { visualizer.attach(sessionId) } catch (e: Exception) { }
+            if (sessionId != 0) {
+                if (androidx.core.content.ContextCompat.checkSelfPermission(this,
+                        android.Manifest.permission.RECORD_AUDIO) ==
+                        android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    try { visualizer.attach(sessionId) } catch (e: Exception) { }
+                } else {
+                    androidx.core.app.ActivityCompat.requestPermissions(this,
+                        arrayOf(android.Manifest.permission.RECORD_AUDIO), 200)
+                }
+            }
         } catch (e: Exception) { }
     }
 
@@ -324,5 +337,14 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
     }
 
     private fun fmt(ms: Int) = String.format("%d:%02d", (ms/1000)/60, (ms/1000)%60)
+    override fun onRequestPermissionsResult(rc: Int, perms: Array<String>, results: IntArray) {
+        super.onRequestPermissionsResult(rc, perms, results)
+        if (rc == 200 && results.isNotEmpty() &&
+            results[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            val id = svc?.getAudioSessionId() ?: 0
+            if (id != 0) try { visualizer.attach(id) } catch (e: Exception) { }
+        }
+    }
+
     override fun onServiceDisconnected(name: ComponentName?) { bound = false; svc = null }
 }

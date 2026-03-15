@@ -3,11 +3,9 @@ package com.asdeveloperszone.musicplayer
 import android.app.Activity
 import android.content.*
 import android.media.MediaMetadataRetriever
-import android.media.RingtoneManager
 import android.net.Uri
 import android.os.*
 import android.provider.MediaStore
-import android.provider.Settings
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -90,9 +88,8 @@ class SongInfoActivity : AppCompatActivity(), ServiceConnection {
         set(R.id.tvInfoSize,     fileSize)
         set(R.id.tvInfoPath,     path)
 
-        findViewById<Button>(R.id.btnShareSong).setOnClickListener    { shareSong(song) }
-        findViewById<Button>(R.id.btnSetRingtone).setOnClickListener  { setAsRingtone(song) }
-        findViewById<Button>(R.id.btnDeleteSong).setOnClickListener   { confirmDelete(song) }
+        findViewById<Button>(R.id.btnShareSong).setOnClickListener  { shareSong(song) }
+        findViewById<Button>(R.id.btnDeleteSong).setOnClickListener  { confirmDelete(song) }
     }
 
     private fun shareSong(song: Song) {
@@ -109,65 +106,7 @@ class SongInfoActivity : AppCompatActivity(), ServiceConnection {
         }
     }
 
-    private fun setAsRingtone(song: Song) {
-        // Check WRITE_SETTINGS permission
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.System.canWrite(this)) {
-            AlertDialog.Builder(this, R.style.SortDialogTheme)
-                .setTitle("Permission Required")
-                .setMessage("Music Player needs permission to modify system settings.\n\nTap Open Settings, find Music Player, and enable 'Modify system settings'.")
-                .setPositiveButton("Open Settings") { _, _ ->
-                    startActivity(Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS).apply {
-                        data = Uri.parse("package:$packageName")
-                    })
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
-            return
-        }
 
-        AlertDialog.Builder(this, R.style.SortDialogTheme)
-            .setTitle("Set \"${song.title}\" as")
-            .setItems(arrayOf("Phone Ringtone", "Notification Sound", "Alarm Sound")) { _, which ->
-                val type = when (which) {
-                    0 -> RingtoneManager.TYPE_RINGTONE
-                    1 -> RingtoneManager.TYPE_NOTIFICATION
-                    else -> RingtoneManager.TYPE_ALARM
-                }
-                applyRingtone(song, type, when(which) {
-                    0 -> "Phone Ringtone"; 1 -> "Notification"; else -> "Alarm"
-                })
-            }.show()
-    }
-
-    private fun applyRingtone(song: Song, type: Int, label: String) {
-        try {
-            val cv = ContentValues().apply {
-                put(MediaStore.Audio.Media.IS_RINGTONE,     type == RingtoneManager.TYPE_RINGTONE)
-                put(MediaStore.Audio.Media.IS_NOTIFICATION, type == RingtoneManager.TYPE_NOTIFICATION)
-                put(MediaStore.Audio.Media.IS_ALARM,        type == RingtoneManager.TYPE_ALARM)
-            }
-            val uri = ContentUris.withAppendedId(
-                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, song.id)
-            try { contentResolver.update(uri, cv, null, null) } catch (e: Exception) { }
-            Settings.System.putString(contentResolver,
-                when (type) {
-                    RingtoneManager.TYPE_NOTIFICATION -> Settings.System.NOTIFICATION_SOUND
-                    RingtoneManager.TYPE_ALARM        -> Settings.System.ALARM_ALERT
-                    else                              -> Settings.System.RINGTONE
-                }, uri.toString())
-            Toast.makeText(this, "\"${song.title}\" set as $label ✓", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            // Fallback to RingtoneManager
-            try {
-                val uri = ContentUris.withAppendedId(
-                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, song.id)
-                RingtoneManager.setActualDefaultRingtoneUri(this, type, uri)
-                Toast.makeText(this, "\"${song.title}\" set as $label ✓", Toast.LENGTH_SHORT).show()
-            } catch (e2: Exception) {
-                Toast.makeText(this, "Error: ${e2.message}", Toast.LENGTH_LONG).show()
-            }
-        }
-    }
 
     private fun confirmDelete(song: Song) {
         AlertDialog.Builder(this, R.style.SortDialogTheme)
