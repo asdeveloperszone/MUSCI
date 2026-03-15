@@ -10,6 +10,8 @@
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -17,6 +19,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.MusicPlayer">
+
         <activity android:name=".SplashActivity" android:exported="true"
             android:noHistory="true" android:screenOrientation="portrait"
             android:theme="@style/Theme.MusicPlayer.Splash">
@@ -25,13 +28,33 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity android:name=".MainActivity" android:exported="false"
-            android:launchMode="singleTop" android:screenOrientation="portrait" />
+            android:launchMode="singleTop" android:screenOrientation="portrait">
+            <!-- Open With: audio files -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/ogg" />
+            </intent-filter>
+        </activity>
+
+        <!-- NowPlaying shows on lock screen -->
         <activity android:name=".NowPlayingActivity" android:exported="true"
             android:launchMode="singleTop" android:screenOrientation="portrait"
             android:parentActivityName=".MainActivity"
             android:showOnLockScreen="true"
-            android:turnScreenOn="true" />
+            android:turnScreenOn="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </activity>
+
         <activity android:name=".SettingsActivity" android:exported="false"
             android:screenOrientation="portrait" android:parentActivityName=".MainActivity" />
         <activity android:name=".AlbumsActivity" android:exported="false"
@@ -50,19 +73,29 @@
             android:screenOrientation="portrait" android:parentActivityName=".AlbumsActivity" />
         <activity android:name=".ArtistSongsActivity" android:exported="false"
             android:screenOrientation="portrait" android:parentActivityName=".ArtistsActivity" />
-        <activity android:name=".SongInfoActivity" android:exported="false"
-            android:screenOrientation="portrait" android:parentActivityName=".NowPlayingActivity" />
         <activity android:name=".EqualizerActivity" android:exported="false"
             android:screenOrientation="portrait" android:parentActivityName=".NowPlayingActivity" />
         <activity android:name=".PlaybackControlsActivity" android:exported="false"
             android:screenOrientation="portrait" android:parentActivityName=".NowPlayingActivity" />
+        <activity android:name=".SongInfoActivity" android:exported="false"
+            android:screenOrientation="portrait" android:parentActivityName=".NowPlayingActivity" />
+
         <service android:name=".MusicService" android:exported="false"
-            android:foregroundServiceType="mediaPlayback" android:stopWithTask="false" />
+            android:foregroundServiceType="mediaPlayback"
+            android:stopWithTask="false" />
+
+        <receiver android:name=".ScreenReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.SCREEN_ON" />
+            </intent-filter>
+        </receiver>
+
         <receiver android:name=".HeadphoneReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.media.AUDIO_BECOMING_NOISY" />
             </intent-filter>
         </receiver>
+
         <receiver android:name=".MusicWidget" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -70,5 +103,6 @@
             <meta-data android:name="android.appwidget.provider"
                 android:resource="@xml/widget_info" />
         </receiver>
+
     </application>
 </manifest>

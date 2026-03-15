@@ -32,6 +32,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     private lateinit var ivMiniArt: ImageView
     private lateinit var tvMiniTitle: TextView
     private lateinit var tvMiniArtist: TextView
+    private lateinit var btnMiniPrev: ImageButton
     private lateinit var btnMiniPlay: ImageButton
     private lateinit var btnMiniNext: ImageButton
     private lateinit var btnMiniClose: ImageButton
@@ -124,6 +125,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         ivMiniArt    = findViewById(R.id.ivMiniArt)
         tvMiniTitle  = findViewById(R.id.tvMiniTitle)
         tvMiniArtist = findViewById(R.id.tvMiniArtist)
+        btnMiniPrev  = findViewById(R.id.btnMiniPrev)
         btnMiniPlay  = findViewById(R.id.btnMiniPlayPause)
         btnMiniNext  = findViewById(R.id.btnMiniNext)
         btnMiniClose = findViewById(R.id.btnMiniClose)
@@ -176,6 +178,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         btnSort.setOnClickListener     { showSort() }
         btnSettings.setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
 
+        btnMiniPrev.setOnClickListener  { svc?.previous() }
         btnMiniPlay.setOnClickListener {
             svc?.togglePlayPause()
             btnMiniPlay.setImageResource(
@@ -303,10 +306,12 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
 
     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
         svc=(service as MusicService.MusicBinder).getService(); bound=true
-        svc!!.currentSong()?.let{ updateMini(it) }
-        btnMiniPlay.setImageResource(if(svc!!.isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
-        svc!!.onSongChange={ song -> runOnUiThread{ updateMini(song); adapter.setCurrentPlaying(song.id) } }
-        svc!!.onPlayState={ p -> runOnUiThread{ btnMiniPlay.setImageResource(if(p) R.drawable.ic_pause else R.drawable.ic_play) } }
+        try {
+            svc?.currentSong()?.let{ updateMini(it) }
+            btnMiniPlay.setImageResource(if(svc?.isPlaying == true) R.drawable.ic_pause else R.drawable.ic_play)
+            svc?.onSongChange={ song -> runOnUiThread{ updateMini(song); adapter.setCurrentPlaying(song.id) } }
+            svc?.onPlayState={ p -> runOnUiThread{ btnMiniPlay.setImageResource(if(p) R.drawable.ic_pause else R.drawable.ic_play) } }
+        } catch (e: Exception) { }
     }
 
     private fun updateMini(song: Song) {

@@ -162,33 +162,31 @@ class EqualizerActivity : AppCompatActivity(), ServiceConnection {
     }
 
     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-        svc = (service as MusicService.MusicBinder).getService()
-        bound = true
-
-        // Initialize EQ in service if not already
-        svc?.initEqualizer()
-
-        val eq = svc?.getEqualizer() ?: return
-        setupPresetButtons(eq)
-        setupEqBands(eq)
-
-        // Restore saved band levels
-        val numBands = eq.numberOfBands.toInt()
-        for (i in 0 until numBands) {
-            val saved = prefs.getInt("band_$i", 0)
-            if (saved != 0) {
-                svc?.setEqBand(i, saved.toShort())
-                val min = eq.bandLevelRange[0].toInt()
-                val max = eq.bandLevelRange[1].toInt()
-                if (i < bandBars.size) {
-                    bandBars[i].progress = (saved - min).coerceIn(0, max - min)
-                    bandValueLabels[i].text = "${saved / 100}dB"
+        try {
+            svc = (service as MusicService.MusicBinder).getService()
+            bound = true
+            svc?.initEqualizer()
+            val eq = svc?.getEqualizer() ?: return
+            setupPresetButtons(eq)
+            setupEqBands(eq)
+            val numBands = eq.numberOfBands.toInt()
+            for (i in 0 until numBands) {
+                val saved = prefs.getInt("band_$i", 0)
+                if (saved != 0) {
+                    svc?.setEqBand(i, saved.toShort())
+                    val min = eq.bandLevelRange[0].toInt()
+                    val max = eq.bandLevelRange[1].toInt()
+                    if (i < bandBars.size) {
+                        bandBars[i].progress = (saved - min).coerceIn(0, max - min)
+                        bandValueLabels[i].text = "${saved / 100}dB"
+                    }
                 }
             }
+            val bassVal = prefs.getInt("bass_boost", 0)
+            svc?.setBassBoost(bassVal)
+        } catch (e: Exception) {
+            Toast.makeText(this, "EQ not available on this device", Toast.LENGTH_SHORT).show()
         }
-
-        val bassVal = prefs.getInt("bass_boost", 0)
-        svc?.setBassBoost(bassVal)
     }
 
     override fun onServiceDisconnected(name: ComponentName?) { bound = false; svc = null }

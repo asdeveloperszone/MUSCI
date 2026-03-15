@@ -80,6 +80,18 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
     private val SWIPE_THRESHOLD = 120f
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Show full screen on lock screen like Samsung Music
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        }
+        @Suppress("DEPRECATION")
+        window.addFlags(
+            android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+            android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+            android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
+            android.view.WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+        )
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_now_playing)
 
@@ -183,7 +195,7 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
                     when {
                         dx < -SWIPE_THRESHOLD -> { svc?.next(); animateSwipe(-1); true }
                         dx >  SWIPE_THRESHOLD -> { svc?.previous(); animateSwipe(1); true }
-                        else -> false
+                        else -> { performClick(); true }
                     }
                 }
                 else -> false
@@ -206,21 +218,23 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
     }
 
     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-        svc = (service as MusicService.MusicBinder).getService()
-        bound = true; lastSongId = -1L
+        try {
+            val s = (service as MusicService.MusicBinder).getService()
+            svc = s; bound = true; lastSongId = -1L
 
-        svc!!.onSongChange    = { song -> runOnUiThread { lastSongId = song.id; loadSong(song) } }
-        svc!!.onPlayState     = { p    -> runOnUiThread { syncPlayBtn(p) } }
-        svc!!.onShuffleChange = { s    -> runOnUiThread { btnShuffle.alpha = if (s) 1f else 0.4f } }
-        svc!!.onRepeatChange  = { r    -> runOnUiThread { syncRepeat(r) } }
+            s.onSongChange    = { song -> runOnUiThread { lastSongId = song.id; loadSong(song) } }
+            s.onPlayState     = { p    -> runOnUiThread { syncPlayBtn(p) } }
+            s.onShuffleChange = { sh   -> runOnUiThread { btnShuffle.alpha = if (sh) 1f else 0.4f } }
+            s.onRepeatChange  = { r    -> runOnUiThread { syncRepeat(r) } }
 
-        svc!!.currentSong()?.let { loadSong(it); lastSongId = it.id }
-        btnShuffle.alpha = if (svc!!.isShuffle) 1f else 0.4f
-        syncRepeat(svc!!.repeatMode); syncPlayBtn(svc!!.isPlaying)
+            s.currentSong()?.let { loadSong(it); lastSongId = it.id }
+            btnShuffle.alpha = if (s.isShuffle) 1f else 0.4f
+            syncRepeat(s.repeatMode); syncPlayBtn(s.isPlaying)
 
-        // Attach visualizer
-        val sessionId = svc!!.getAudioSessionId()
-        if (sessionId != 0) visualizer.attach(sessionId)
+            // Attach visualizer safely
+            val sessionId = s.getAudioSessionId()
+            if (sessionId != 0) try { visualizer.attach(sessionId) } catch (e: Exception) { }
+        } catch (e: Exception) { }
     }
 
     private fun loadSong(song: Song) {
@@ -235,7 +249,7 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
                     ivArt.setImageBitmap(bmp)
                     if (useBlurBg) applyBlurBg(bmp) else applyGradient(bmp)
                     // Update widget
-                    MusicWidget.updateWidgetData(this@NowPlayingActivity,
+                    MusicWidget.push(this@NowPlayingActivity,
                         song.title, song.artist, svc?.isPlaying == true)
                 }
                 override fun onLoadCleared(p: android.graphics.drawable.Drawable?) { ivArt.setImageDrawable(p) }

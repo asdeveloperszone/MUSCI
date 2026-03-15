@@ -1,5 +1,6 @@
 package com.asdeveloperszone.musicplayer
 import android.app.*
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -50,6 +51,7 @@ class MusicService : Service() {
     private var focusRequest: AudioFocusRequest? = null
     private var mediaSession: MediaSessionCompat? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    private var screenReceiver: ScreenReceiver? = null
     private var equalizer: Equalizer? = null
     private var bassBoost: BassBoost? = null
     private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
@@ -66,6 +68,7 @@ class MusicService : Service() {
         super.onCreate()
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         createChannel(); initSession(); acquireWake()
+        registerScreenReceiver()
     }
     override fun onBind(intent: Intent): IBinder = binder
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -148,7 +151,7 @@ class MusicService : Service() {
             fire { onSongChange?.invoke(song); onPlayState?.invoke(true) }
             initEqualizer()
             try { RecentlyPlayedManager.add(song.id) } catch (e: Exception) { }
-            try { MusicWidget.updateWidgetData(applicationContext, song.title, song.artist, true) } catch (e: Exception) { }
+            try { MusicWidget.push(applicationContext, song.title, song.artist, true) } catch (e: Exception) { }
             initEqualizer()
             updateMeta(song); updateSession(); postNotif(song)
         } catch (e: Exception) { Log.e(TAG, "play: ${e.message}"); fire { onPlayState?.invoke(false) } }
@@ -214,7 +217,10 @@ class MusicService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(song.title).setContentText("${song.artist} • ${song.album}")
             .setSmallIcon(R.drawable.ic_music_note).setLargeIcon(art)
-            .setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, NowPlayingActivity::class.java), f))
+            .setContentIntent(PendingIntent.getActivity(this, 0,
+                Intent(this, NowPlayingActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                }, f))
             .addAction(R.drawable.ic_skip_previous, "Prev",  svc(ACTION_PREV, 1))
             .addAction(R.drawable.ic_rewind,        "-10s",  svc(ACTION_REWIND, 2))
             .addAction(if (playing) R.drawable.ic_pause else R.drawable.ic_play, if (playing) "Pause" else "Play", svc(ACTION_PLAY_PAUSE, 3))
@@ -272,7 +278,7 @@ class MusicService : Service() {
     private fun releaseWake() { try { if (wakeLock?.isHeld == true) wakeLock?.release() } catch (e: Exception) { }; wakeLock = null }
     private fun fire(block: () -> Unit) { if (Looper.myLooper() == Looper.getMainLooper()) block() else main.post(block) }
     override fun onDestroy() {
-        try { notifThread?.interrupt(); dropFocus(); mediaSession?.apply { isActive = false; release() }
+        try { unregisterScreenReceiver(); notifThread?.interrupt(); dropFocus(); mediaSession?.apply { isActive = false; release() }
             player?.apply { try { if (isPlaying) stop() } catch (e: Exception) { }; reset(); release() }
             player = null; releaseWake()
         } catch (e: Exception) { }
@@ -386,6 +392,18 @@ class MusicService : Service() {
 
     fun jumpToQueueIndex(pos: Int) {
         if (pos in queue.indices) { index = pos; play() }
+    }
+
+    private fun registerScreenReceiver() {
+        try {
+            screenReceiver = ScreenReceiver()
+            registerReceiver(screenReceiver, android.content.IntentFilter(android.content.Intent.ACTION_SCREEN_ON))
+        } catch (e: Exception) { }
+    }
+
+    private fun unregisterScreenReceiver() {
+        try { screenReceiver?.let { unregisterReceiver(it) } } catch (e: Exception) { }
+        screenReceiver = null
     }
 
     fun removeFromQueue(songId: Long) {

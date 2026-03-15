@@ -94,11 +94,14 @@ class QueueActivity : AppCompatActivity(), ServiceConnection {
     }
 
     override fun onServiceConnected(n: ComponentName?, s: IBinder?) {
-        svc = (s as MusicService.MusicBinder).getService()
-        bound = true
-        adapter.setQueue(svc?.getQueue() ?: emptyList(), svc?.getCurrentIndex() ?: 0)
-        findViewById<TextView>(R.id.tvQueueCount).text =
-            "${svc?.getQueue()?.size ?: 0} songs in queue"
+        try {
+            svc = (s as MusicService.MusicBinder).getService()
+            bound = true
+            val queue = svc?.getQueue() ?: emptyList()
+            val idx   = svc?.getCurrentIndex() ?: 0
+            adapter.setQueue(queue, idx)
+            findViewById<TextView>(R.id.tvQueueCount).text = "${queue.size} songs in queue"
+        } catch (e: Exception) { }
     }
 
     override fun onServiceDisconnected(n: ComponentName?) { bound = false; svc = null }
