@@ -1,4 +1,5 @@
 package com.asdeveloperszone.musicplayer
+import android.content.Context
 import android.app.*
 import android.content.Intent
 import android.graphics.Bitmap
