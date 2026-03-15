@@ -1,5 +1,6 @@
 package com.asdeveloperszone.musicplayer
 import android.app.*
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -386,5 +387,16 @@ class MusicService : Service() {
 
     fun jumpToQueueIndex(pos: Int) {
         if (pos in queue.indices) { index = pos; play() }
+    }
+
+    fun removeFromQueue(songId: Long) {
+        val pos = queue.indexOfFirst { it.id == songId }
+        if (pos < 0) return
+        queue.removeAt(pos)
+        when {
+            queue.isEmpty() -> stop()
+            pos < index     -> index--
+            pos == index    -> { index = index.coerceIn(0, queue.size - 1); play() }
+        }
     }
 }

@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_dark">
+
+    <!-- Header -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:paddingHorizontal="16dp" android:background="@drawable/bg_appbar_gradient">
+        <ImageButton android:id="@+id/btnSongInfoBack"
+            android:layout_width="40dp" android:layout_height="40dp"
+            android:src="@drawable/ic_arrow_back"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="@color/white" android:contentDescription="Back"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="SONG INFO" android:textColor="@color/white"
+            android:textSize="18sp" android:textStyle="bold"
+            android:fontFamily="sans-serif-condensed" android:layout_marginStart="12dp"/>
+    </LinearLayout>
+
+    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="16dp">
+
+            <!-- Info Card -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                app:cardBackgroundColor="@color/card_bg" app:cardCornerRadius="12dp"
+                android:layout_marginBottom="16dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="vertical" android:padding="16dp">
+
+                    <!-- Title -->
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="center_vertical"
+                        android:paddingVertical="8dp">
+                        <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                            android:src="@drawable/ic_music_note" android:tint="@color/red_primary"/>
+                        <TextView android:layout_width="100dp" android:layout_height="wrap_content"
+                            android:text="  Title" android:textColor="#88FFFFFF" android:textSize="12sp"/>
+                        <TextView android:id="@+id/tvInfoTitle"
+                            android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_weight="1" android:textColor="@color/white"
+                            android:textSize="13sp" android:textStyle="bold"/>
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="0.5dp"
+                        android:background="#22FFFFFF"/>
+
+                    <!-- Artist -->
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="center_vertical"
+                        android:paddingVertical="8dp">
+                        <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                            android:src="@drawable/ic_artist" android:tint="@color/red_primary"/>
+                        <TextView android:layout_width="100dp" android:layout_height="wrap_content"
+                            android:text="  Artist" android:textColor="#88FFFFFF" android:textSize="12sp"/>
+                        <TextView android:id="@+id/tvInfoArtist"
+                            android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_weight="1" android:textColor="@color/white" android:textSize="13sp"/>
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="0.5dp"
+                        android:background="#22FFFFFF"/>
+
+                    <!-- Album -->
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="center_vertical"
+                        android:paddingVertical="8dp">
+                        <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                            android:src="@drawable/ic_album" android:tint="@color/red_primary"/>
+                        <TextView android:layout_width="100dp" android:layout_height="wrap_content"
+                            android:text="  Album" android:textColor="#88FFFFFF" android:textSize="12sp"/>
+                        <TextView android:id="@+id/tvInfoAlbum"
+                            android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_weight="1" android:textColor="@color/white" android:textSize="13sp"/>
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="0.5dp"
+                        android:background="#22FFFFFF"/>
+
+                    <!-- Duration -->
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="center_vertical"
+                        android:paddingVertical="8dp">
+                        <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                            android:src="@drawable/ic_timer" android:tint="@color/red_primary"/>
+                        <TextView android:layout_width="100dp" android:layout_height="wrap_content"
+                            android:text="  Duration" android:textColor="#88FFFFFF" android:textSize="12sp"/>
+                        <TextView android:id="@+id/tvInfoDuration"
+                            android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_weight="1" android:textColor="@color/white" android:textSize="13sp"/>
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="0.5dp"
+                        android:background="#22FFFFFF"/>
+
+                    <!-- Format -->
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="center_vertical"
+                        android:paddingVertical="8dp">
+                        <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                            android:src="@drawable/ic_equalizer" android:tint="@color/red_primary"/>
+                        <TextView android:layout_width="100dp" android:layout_height="wrap_content"
+                            android:text="  Format" android:textColor="#88FFFFFF" android:textSize="12sp"/>
+                        <TextView android:id="@+id/tvInfoFormat"
+                            android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_weight="1" android:textColor="@color/white" android:textSize="13sp"/>
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="0.5dp"
+                        android:background="#22FFFFFF"/>
+
+                    <!-- Bitrate -->
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="center_vertical"
+                        android:paddingVertical="8dp">
+                        <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                            android:src="@drawable/ic_speed_outline" android:tint="@color/red_primary"/>
+                        <TextView android:layout_width="100dp" android:layout_height="wrap_content"
+                            android:text="  Bitrate" android:textColor="#88FFFFFF" android:textSize="12sp"/>
+                        <TextView android:id="@+id/tvInfoBitrate"
+                            android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_weight="1" android:textColor="@color/white" android:textSize="13sp"/>
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="0.5dp"
+                        android:background="#22FFFFFF"/>
+
+                    <!-- File Size -->
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="center_vertical"
+                        android:paddingVertical="8dp">
+                        <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                            android:src="@drawable/ic_folder" android:tint="@color/red_primary"/>
+                        <TextView android:layout_width="100dp" android:layout_height="wrap_content"
+                            android:text="  File Size" android:textColor="#88FFFFFF" android:textSize="12sp"/>
+                        <TextView android:id="@+id/tvInfoSize"
+                            android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_weight="1" android:textColor="@color/white" android:textSize="13sp"/>
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="0.5dp"
+                        android:background="#22FFFFFF"/>
+
+                    <!-- File Path -->
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="top"
+                        android:paddingVertical="8dp">
+                        <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                            android:src="@drawable/ic_folder" android:tint="#44FFFFFF"
+                            android:layout_marginTop="2dp"/>
+                        <TextView android:layout_width="100dp" android:layout_height="wrap_content"
+                            android:text="  Path" android:textColor="#88FFFFFF" android:textSize="12sp"/>
+                        <TextView android:id="@+id/tvInfoPath"
+                            android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_weight="1" android:textColor="#88FFFFFF"
+                            android:textSize="11sp"/>
+                    </LinearLayout>
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Action Buttons -->
+            <Button android:id="@+id/btnShareSong"
+                android:layout_width="match_parent" android:layout_height="48dp"
+                android:text="Share Song" android:textColor="@color/white"
+                android:backgroundTint="@color/red_primary"
+                android:drawableStart="@drawable/ic_share"
+                android:drawablePadding="8dp"
+                android:layout_marginBottom="10dp"/>
+
+            <Button android:id="@+id/btnSetRingtone"
+                android:layout_width="match_parent" android:layout_height="48dp"
+                android:text="Set as Ringtone / Alarm"
+                android:textColor="@color/white"
+                android:backgroundTint="#1A1A1A"
+                android:drawableStart="@drawable/ic_ringtone"
+                android:drawablePadding="8dp"
+                android:layout_marginBottom="10dp"/>
+
+            <Button android:id="@+id/btnDeleteSong"
+                android:layout_width="match_parent" android:layout_height="48dp"
+                android:text="Delete Song"
+                android:textColor="#FF4444"
+                android:backgroundTint="#1A1A1A"
+                android:drawableStart="@drawable/ic_delete"
+                android:drawablePadding="8dp"/>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

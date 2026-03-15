@@ -138,6 +138,13 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:tint="#AAFFFFFF" android:contentDescription="Queue"/>
 
+        <ImageButton android:id="@+id/btnSongInfo"
+            android:layout_width="30dp" android:layout_height="30dp"
+            android:layout_marginStart="6dp"
+            android:src="@drawable/ic_info"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="#AAFFFFFF" android:contentDescription="Song Info"/>
+
     </LinearLayout>
 
     <!-- Visualizer -->

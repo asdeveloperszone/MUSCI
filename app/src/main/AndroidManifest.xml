@@ -9,6 +9,7 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -49,6 +50,8 @@
             android:screenOrientation="portrait" android:parentActivityName=".AlbumsActivity" />
         <activity android:name=".ArtistSongsActivity" android:exported="false"
             android:screenOrientation="portrait" android:parentActivityName=".ArtistsActivity" />
+        <activity android:name=".SongInfoActivity" android:exported="false"
+            android:screenOrientation="portrait" android:parentActivityName=".NowPlayingActivity" />
         <activity android:name=".EqualizerActivity" android:exported="false"
             android:screenOrientation="portrait" android:parentActivityName=".NowPlayingActivity" />
         <activity android:name=".PlaybackControlsActivity" android:exported="false"

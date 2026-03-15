@@ -37,6 +37,7 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
     private lateinit var btnEq: ImageButton
     private lateinit var btnSpeed: ImageButton
     private lateinit var btnQueue: ImageButton
+    private lateinit var btnSongInfo: ImageButton
     private lateinit var btnBgToggle: ImageButton
     private lateinit var visualizer: VisualizerView
     private lateinit var seekBar: SeekBar
@@ -127,6 +128,7 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
         btnEq       = findViewById(R.id.btnEqualizer)
         btnSpeed    = findViewById(R.id.btnSpeed)
         btnQueue    = findViewById(R.id.btnQueue)
+        btnSongInfo = findViewById(R.id.btnSongInfo)
         btnBgToggle = findViewById(R.id.btnBgToggle)
         visualizer  = findViewById(R.id.visualizer)
         seekBar     = findViewById(R.id.seekBar)
@@ -146,7 +148,8 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
         btnClose.setOnClickListener   { svc?.stop(); finish() }
         btnEq.setOnClickListener      { startActivity(Intent(this, EqualizerActivity::class.java)) }
         btnSpeed.setOnClickListener   { startActivity(Intent(this, PlaybackControlsActivity::class.java)) }
-        btnQueue.setOnClickListener   { startActivity(Intent(this, QueueActivity::class.java)) }
+        btnQueue.setOnClickListener    { startActivity(Intent(this, QueueActivity::class.java)) }
+        btnSongInfo.setOnClickListener { startActivity(Intent(this, SongInfoActivity::class.java)) }
 
         btnBgToggle.setOnClickListener {
             useBlurBg = !useBlurBg
@@ -180,7 +183,7 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
                     when {
                         dx < -SWIPE_THRESHOLD -> { svc?.next(); animateSwipe(-1); true }
                         dx >  SWIPE_THRESHOLD -> { svc?.previous(); animateSwipe(1); true }
-                        else -> false
+                        else -> { performClick(); true }
                     }
                 }
                 else -> false
