@@ -271,3 +271,47 @@ class MusicService : Service() {
         super.onDestroy()
     }
 }
+
+// ── Audio Effects Extensions ───────────────────────────────────────────────
+fun getAudioSessionId(): Int = try { player?.audioSessionId ?: 0 } catch (e: Exception) { 0 }
+
+fun setPlaybackSpeed(speed: Float) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        try {
+            val params = player?.playbackParams?.apply { this.speed = speed }
+            if (params != null) player?.playbackParams = params
+        } catch (e: Exception) { }
+    }
+}
+
+fun setPlaybackPitch(pitch: Float) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        try {
+            val params = player?.playbackParams?.apply { this.pitch = pitch }
+            if (params != null) player?.playbackParams = params
+        } catch (e: Exception) { }
+    }
+}
+
+private var crossfadeDuration = 0 // seconds
+
+fun setCrossfade(seconds: Int) {
+    crossfadeDuration = seconds
+}
+
+private fun applyPlaybackSettings() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        try {
+            val speedPrefs = applicationContext.getSharedPreferences("playback_settings", Context.MODE_PRIVATE)
+            val speed = speedPrefs.getFloat("playback_speed", 1.0f)
+            val pitch = speedPrefs.getFloat("playback_pitch", 1.0f)
+            if (speed != 1.0f || pitch != 1.0f) {
+                val params = android.media.PlaybackParams().apply {
+                    this.speed = speed
+                    this.pitch = pitch
+                }
+                player?.playbackParams = params
+            }
+        } catch (e: Exception) { }
+    }
+}

@@ -32,6 +32,8 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
     private lateinit var btnRewind: ImageButton
     private lateinit var btnFwd: ImageButton
     private lateinit var btnFavorite: ImageButton
+    private lateinit var btnEq: ImageButton
+    private lateinit var btnSpeed: ImageButton
     private lateinit var seekBar: SeekBar
     private lateinit var tvPos: TextView
     private lateinit var tvDur: TextView
@@ -89,24 +91,26 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
     }
 
     private fun initViews() {
-        root       = findViewById(R.id.rootLayout)
-        ivArt      = findViewById(R.id.ivAlbumArt)
-        tvTitle    = findViewById(R.id.tvTitle)
-        tvArtist   = findViewById(R.id.tvArtist)
-        tvAlbum    = findViewById(R.id.tvAlbum)
-        btnPlay    = findViewById(R.id.btnPlayPause)
-        btnNext    = findViewById(R.id.btnNext)
-        btnPrev    = findViewById(R.id.btnPrevious)
-        btnShuffle = findViewById(R.id.btnShuffle)
-        btnRepeat  = findViewById(R.id.btnRepeat)
-        btnClose   = findViewById(R.id.btnClose)
-        btnBack    = findViewById(R.id.btnBack)
-        btnRewind  = findViewById(R.id.btnRewind)
-        btnFwd     = findViewById(R.id.btnForward)
-        btnFavorite= findViewById(R.id.btnFavorite)
-        seekBar    = findViewById(R.id.seekBar)
-        tvPos      = findViewById(R.id.tvCurrentTime)
-        tvDur      = findViewById(R.id.tvTotalTime)
+        root        = findViewById(R.id.rootLayout)
+        ivArt       = findViewById(R.id.ivAlbumArt)
+        tvTitle     = findViewById(R.id.tvTitle)
+        tvArtist    = findViewById(R.id.tvArtist)
+        tvAlbum     = findViewById(R.id.tvAlbum)
+        btnPlay     = findViewById(R.id.btnPlayPause)
+        btnNext     = findViewById(R.id.btnNext)
+        btnPrev     = findViewById(R.id.btnPrevious)
+        btnShuffle  = findViewById(R.id.btnShuffle)
+        btnRepeat   = findViewById(R.id.btnRepeat)
+        btnClose    = findViewById(R.id.btnClose)
+        btnBack     = findViewById(R.id.btnBack)
+        btnRewind   = findViewById(R.id.btnRewind)
+        btnFwd      = findViewById(R.id.btnForward)
+        btnFavorite = findViewById(R.id.btnFavorite)
+        btnEq       = findViewById(R.id.btnEqualizer)
+        btnSpeed    = findViewById(R.id.btnSpeed)
+        seekBar     = findViewById(R.id.seekBar)
+        tvPos       = findViewById(R.id.tvCurrentTime)
+        tvDur       = findViewById(R.id.tvTotalTime)
 
         btnBack.setOnClickListener    { finish() }
         btnPlay.setOnClickListener    { svc?.togglePlayPause() }
@@ -117,16 +121,15 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
         btnShuffle.setOnClickListener { svc?.shuffle() }
         btnRepeat.setOnClickListener  { svc?.cycleRepeat() }
         btnClose.setOnClickListener   { svc?.stop(); finish() }
+        btnEq.setOnClickListener      { startActivity(Intent(this, EqualizerActivity::class.java)) }
+        btnSpeed.setOnClickListener   { startActivity(Intent(this, PlaybackControlsActivity::class.java)) }
 
         btnFavorite.setOnClickListener {
             val song = svc?.currentSong() ?: return@setOnClickListener
             val isFav = FavoritesManager.toggle(song.id)
-            btnFavorite.setImageResource(
-                if (isFav) R.drawable.ic_favorite else R.drawable.ic_favorite_border)
-            btnFavorite.setColorFilter(
-                if (isFav) 0xFFFF4444.toInt() else 0xFFAAAAAA.toInt())
+            syncFavoriteBtn(isFav)
             Toast.makeText(this,
-                if (isFav) "Added to Favorites" else "Removed from Favorites",
+                if (isFav) "❤ Added to Favorites" else "Removed from Favorites",
                 Toast.LENGTH_SHORT).show()
         }
 
@@ -155,11 +158,7 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
     private fun loadSong(song: Song) {
         tvTitle.text = song.title; tvArtist.text = song.artist
         tvAlbum.text = song.album; tvDur.text = song.getDurationFormatted()
-
-        // Sync favorite button
-        val isFav = FavoritesManager.isFavorite(song.id)
-        btnFavorite.setImageResource(if (isFav) R.drawable.ic_favorite else R.drawable.ic_favorite_border)
-        btnFavorite.setColorFilter(if (isFav) 0xFFFF4444.toInt() else 0xFFAAAAAA.toInt())
+        syncFavoriteBtn(FavoritesManager.isFavorite(song.id))
 
         Glide.with(this).asBitmap().load(song.albumArtUri)
             .placeholder(R.drawable.ic_music_note).error(R.drawable.ic_music_note)
@@ -177,6 +176,11 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
         btnPlay.setImageResource(if (playing) R.drawable.ic_pause else R.drawable.ic_play)
         ivArt.animate().scaleX(if (playing) 1f else 0.8f)
             .scaleY(if (playing) 1f else 0.8f).setDuration(200).start()
+    }
+
+    private fun syncFavoriteBtn(isFav: Boolean) {
+        btnFavorite.setImageResource(if (isFav) R.drawable.ic_favorite else R.drawable.ic_favorite_border)
+        btnFavorite.setColorFilter(if (isFav) 0xFFFF4444.toInt() else 0xFFAAAAAA.toInt())
     }
 
     private fun syncRepeat(mode: RepeatMode) {

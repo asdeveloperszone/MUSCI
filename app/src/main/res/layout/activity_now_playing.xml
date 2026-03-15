@@ -7,6 +7,7 @@
     android:layout_height="match_parent"
     android:background="@color/bg_dark">
 
+    <!-- Back -->
     <ImageButton android:id="@+id/btnBack"
         android:layout_width="42dp" android:layout_height="42dp"
         android:layout_marginStart="12dp" android:layout_marginTop="12dp"
@@ -14,26 +15,27 @@
         android:tint="@color/white" android:contentDescription="Back"
         app:layout_constraintTop_toTopOf="parent" app:layout_constraintStart_toStartOf="parent"/>
 
+    <!-- Now Playing label -->
     <TextView android:id="@+id/tvNowPlayingLabel"
         android:layout_width="0dp" android:layout_height="wrap_content"
         android:text="NOW PLAYING" android:textColor="#AAFFFFFF"
         android:textSize="11sp" android:letterSpacing="0.15" android:gravity="center"
         android:fontFamily="sans-serif-condensed"
-        app:layout_constraintTop_toTopOf="@id/btnBack" app:layout_constraintBottom_toBottomOf="@id/btnBack"
-        app:layout_constraintStart_toEndOf="@id/btnBack" app:layout_constraintEnd_toStartOf="@id/btnClose"/>
+        app:layout_constraintTop_toTopOf="@id/btnBack"
+        app:layout_constraintBottom_toBottomOf="@id/btnBack"
+        app:layout_constraintStart_toEndOf="@id/btnBack"
+        app:layout_constraintEnd_toStartOf="@id/btnFavorite"/>
 
+    <!-- Favorite -->
     <ImageButton android:id="@+id/btnFavorite"
-        android:layout_width="42dp"
-        android:layout_height="42dp"
-        android:layout_marginEnd="4dp"
+        android:layout_width="38dp" android:layout_height="38dp"
         android:layout_marginTop="12dp"
-        android:src="@drawable/ic_favorite_border"
-        android:background="@drawable/bg_icon_btn"
-        android:tint="#FFAAAAAA"
+        android:src="@drawable/ic_favorite_border" android:background="@drawable/bg_icon_btn"
         android:contentDescription="Favorite"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/btnClose" />
+        app:layout_constraintEnd_toStartOf="@id/btnClose"/>
 
+    <!-- Close -->
     <ImageButton android:id="@+id/btnClose"
         android:layout_width="42dp" android:layout_height="42dp"
         android:layout_marginEnd="12dp" android:layout_marginTop="12dp"
@@ -41,18 +43,21 @@
         android:tint="#FFAAAAAA" android:contentDescription="Stop"
         app:layout_constraintTop_toTopOf="parent" app:layout_constraintEnd_toEndOf="parent"/>
 
+    <!-- Album Art -->
     <ImageView android:id="@+id/ivAlbumArt"
         android:layout_width="0dp" android:layout_height="0dp"
-        android:layout_marginHorizontal="40dp" android:layout_marginTop="16dp"
+        android:layout_marginHorizontal="36dp" android:layout_marginTop="12dp"
         android:scaleType="centerCrop" android:src="@drawable/ic_music_note"
         android:background="@drawable/bg_album_art_large" android:elevation="12dp"
         app:layout_constraintTop_toBottomOf="@id/btnBack"
         app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintDimensionRatio="1:1" app:layout_constraintBottom_toTopOf="@id/tvTitle"/>
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintBottom_toTopOf="@id/tvTitle"/>
 
+    <!-- Title -->
     <TextView android:id="@+id/tvTitle"
         android:layout_width="0dp" android:layout_height="wrap_content"
-        android:layout_marginHorizontal="24dp" android:layout_marginTop="16dp"
+        android:layout_marginHorizontal="24dp" android:layout_marginTop="14dp"
         android:text="Song Title" android:textColor="@color/white"
         android:textSize="20sp" android:textStyle="bold"
         android:singleLine="true" android:ellipsize="marquee"
@@ -63,8 +68,8 @@
 
     <TextView android:id="@+id/tvArtist"
         android:layout_width="0dp" android:layout_height="wrap_content"
-        android:layout_marginHorizontal="24dp" android:layout_marginTop="4dp"
-        android:text="Artist" android:textColor="@color/red_light" android:textSize="14sp"
+        android:layout_marginHorizontal="24dp" android:layout_marginTop="3dp"
+        android:text="Artist" android:textColor="@color/red_light" android:textSize="13sp"
         android:singleLine="true"
         app:layout_constraintTop_toBottomOf="@id/tvTitle"
         app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"/>
@@ -72,16 +77,40 @@
     <TextView android:id="@+id/tvAlbum"
         android:layout_width="0dp" android:layout_height="wrap_content"
         android:layout_marginHorizontal="24dp" android:layout_marginTop="2dp"
-        android:text="Album" android:textColor="#66FFFFFF" android:textSize="12sp"
+        android:text="Album" android:textColor="#66FFFFFF" android:textSize="11sp"
         android:singleLine="true"
         app:layout_constraintTop_toBottomOf="@id/tvArtist"
         app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"/>
 
+    <!-- EQ and Speed row -->
+    <LinearLayout android:id="@+id/extraBtnsRow"
+        android:layout_width="0dp" android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginHorizontal="24dp" android:layout_marginTop="6dp"
+        app:layout_constraintTop_toBottomOf="@id/tvAlbum"
+        app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageButton android:id="@+id/btnEqualizer"
+            android:layout_width="32dp" android:layout_height="32dp"
+            android:src="@drawable/ic_equalizer"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="#AAFFFFFF" android:contentDescription="Equalizer"/>
+
+        <ImageButton android:id="@+id/btnSpeed"
+            android:layout_width="32dp" android:layout_height="32dp"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/ic_timer"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="#AAFFFFFF" android:contentDescription="Speed"/>
+
+    </LinearLayout>
+
+    <!-- SeekBar -->
     <SeekBar android:id="@+id/seekBar"
         android:layout_width="0dp" android:layout_height="wrap_content"
-        android:layout_marginHorizontal="24dp" android:layout_marginTop="14dp"
+        android:layout_marginHorizontal="24dp" android:layout_marginTop="10dp"
         android:progressTint="@color/red_primary" android:thumbTint="@color/white"
-        app:layout_constraintTop_toBottomOf="@id/tvAlbum"
+        app:layout_constraintTop_toBottomOf="@id/extraBtnsRow"
         app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"/>
 
     <TextView android:id="@+id/tvCurrentTime"
@@ -101,7 +130,7 @@
     <!-- Shuffle -->
     <ImageButton android:id="@+id/btnShuffle"
         android:layout_width="36dp" android:layout_height="36dp"
-        android:layout_marginStart="16dp" android:layout_marginBottom="24dp"
+        android:layout_marginStart="16dp" android:layout_marginBottom="20dp"
         android:src="@drawable/ic_shuffle"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:tint="@color/white" android:alpha="0.4" android:contentDescription="Shuffle"
@@ -109,12 +138,12 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvCurrentTime"/>
 
-    <!-- Rewind -10s -->
+    <!-- Rewind -->
     <ImageButton android:id="@+id/btnRewind"
-        android:layout_width="40dp" android:layout_height="40dp"
+        android:layout_width="38dp" android:layout_height="38dp"
         android:src="@drawable/ic_rewind"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:tint="@color/white" android:contentDescription="Rewind 10s"
+        android:tint="@color/white" android:contentDescription="Rewind"
         app:layout_constraintTop_toTopOf="@id/btnShuffle"
         app:layout_constraintBottom_toBottomOf="@id/btnShuffle"
         app:layout_constraintStart_toEndOf="@id/btnShuffle"
@@ -152,12 +181,12 @@
         app:layout_constraintStart_toEndOf="@id/btnPlayPause"
         app:layout_constraintEnd_toStartOf="@id/btnForward"/>
 
-    <!-- Forward +10s -->
+    <!-- Forward -->
     <ImageButton android:id="@+id/btnForward"
-        android:layout_width="40dp" android:layout_height="40dp"
+        android:layout_width="38dp" android:layout_height="38dp"
         android:src="@drawable/ic_forward"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:tint="@color/white" android:contentDescription="Forward 10s"
+        android:tint="@color/white" android:contentDescription="Forward"
         app:layout_constraintTop_toTopOf="@id/btnShuffle"
         app:layout_constraintBottom_toBottomOf="@id/btnShuffle"
         app:layout_constraintStart_toEndOf="@id/btnNext"

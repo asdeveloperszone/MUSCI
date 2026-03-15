@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -37,6 +38,10 @@
             android:screenOrientation="portrait" android:parentActivityName=".AlbumsActivity" />
         <activity android:name=".ArtistSongsActivity" android:exported="false"
             android:screenOrientation="portrait" android:parentActivityName=".ArtistsActivity" />
+        <activity android:name=".EqualizerActivity" android:exported="false"
+            android:screenOrientation="portrait" android:parentActivityName=".NowPlayingActivity" />
+        <activity android:name=".PlaybackControlsActivity" android:exported="false"
+            android:screenOrientation="portrait" android:parentActivityName=".NowPlayingActivity" />
         <service android:name=".MusicService" android:exported="false"
             android:foregroundServiceType="mediaPlayback" android:stopWithTask="false" />
         <receiver android:name=".HeadphoneReceiver" android:exported="false">
