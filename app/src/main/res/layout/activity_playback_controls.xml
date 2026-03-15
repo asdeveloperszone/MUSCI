@@ -15,7 +15,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:tint="@color/white" android:contentDescription="Back"/>
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="PLAYBACK" android:textColor="@color/white"
+            android:text="PLAYBACK CONTROLS" android:textColor="@color/white"
             android:textSize="18sp" android:textStyle="bold"
             android:fontFamily="sans-serif-condensed" android:layout_marginStart="12dp"/>
     </LinearLayout>
@@ -25,9 +25,15 @@
             android:orientation="vertical" android:padding="16dp">
 
             <!-- Speed -->
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="⚡ PLAYBACK SPEED" android:textColor="@color/red_primary"
-                android:textSize="12sp" android:letterSpacing="0.1" android:layout_marginBottom="8dp"/>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:layout_marginBottom="8dp">
+                <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                    android:src="@drawable/ic_speed_outline" android:tint="@color/red_primary"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="  PLAYBACK SPEED" android:textColor="@color/red_primary"
+                    android:textSize="12sp" android:letterSpacing="0.1"/>
+            </LinearLayout>
 
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -38,10 +44,15 @@
             </androidx.cardview.widget.CardView>
 
             <!-- Pitch -->
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="🎵 PITCH CONTROL" android:textColor="@color/red_primary"
-                android:textSize="12sp" android:letterSpacing="0.1"
-                android:layout_marginTop="20dp" android:layout_marginBottom="8dp"/>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:layout_marginTop="20dp" android:layout_marginBottom="8dp">
+                <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                    android:src="@drawable/ic_pitch" android:tint="@color/red_primary"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="  PITCH CONTROL" android:textColor="@color/red_primary"
+                    android:textSize="12sp" android:letterSpacing="0.1"/>
+            </LinearLayout>
 
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -54,14 +65,14 @@
                         android:layout_marginBottom="12dp"/>
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:orientation="horizontal" android:gravity="center_vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="Low" android:textColor="#88FFFFFF" android:textSize="11sp"/>
+                        <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                            android:src="@drawable/ic_pitch" android:tint="#55FFFFFF"/>
                         <SeekBar android:id="@+id/seekPitch"
                             android:layout_width="0dp" android:layout_height="wrap_content"
                             android:layout_weight="1" android:layout_marginHorizontal="12dp"
                             android:progressTint="@color/red_primary" android:thumbTint="@color/white"/>
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="High" android:textColor="#88FFFFFF" android:textSize="11sp"/>
+                        <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                            android:src="@drawable/ic_pitch" android:tint="@color/red_primary"/>
                     </LinearLayout>
                     <TextView android:id="@+id/tvPitchValue"
                         android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -72,10 +83,15 @@
             </androidx.cardview.widget.CardView>
 
             <!-- Crossfade -->
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="🔀 CROSSFADE" android:textColor="@color/red_primary"
-                android:textSize="12sp" android:letterSpacing="0.1"
-                android:layout_marginTop="20dp" android:layout_marginBottom="8dp"/>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:layout_marginTop="20dp" android:layout_marginBottom="8dp">
+                <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                    android:src="@drawable/ic_crossfade" android:tint="@color/red_primary"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="  CROSSFADE" android:textColor="@color/red_primary"
+                    android:textSize="12sp" android:letterSpacing="0.1"/>
+            </LinearLayout>
 
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -88,14 +104,14 @@
                         android:layout_marginBottom="12dp"/>
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:orientation="horizontal" android:gravity="center_vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="Off" android:textColor="#88FFFFFF" android:textSize="11sp"/>
+                        <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                            android:src="@drawable/ic_crossfade" android:tint="#55FFFFFF"/>
                         <SeekBar android:id="@+id/seekCrossfade"
                             android:layout_width="0dp" android:layout_height="wrap_content"
                             android:layout_weight="1" android:layout_marginHorizontal="12dp"
                             android:progressTint="@color/red_primary" android:thumbTint="@color/white"/>
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="10s" android:textColor="#88FFFFFF" android:textSize="11sp"/>
+                        <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                            android:src="@drawable/ic_crossfade" android:tint="@color/red_primary"/>
                     </LinearLayout>
                     <TextView android:id="@+id/tvCrossfadeValue"
                         android:layout_width="match_parent" android:layout_height="wrap_content"

@@ -16,6 +16,8 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.palette.graphics.Palette
+import android.media.audiofx.Equalizer
+import android.media.audiofx.BassBoost
 class MusicService : Service() {
     companion object {
         const val CHANNEL_ID    = "MusicPlayerChannel"
@@ -48,6 +50,8 @@ class MusicService : Service() {
     private var focusRequest: AudioFocusRequest? = null
     private var mediaSession: MediaSessionCompat? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    private var equalizer: Equalizer? = null
+    private var bassBoost: BassBoost? = null
     private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
         main.post {
             when (change) {
@@ -142,6 +146,7 @@ class MusicService : Service() {
                 setOnErrorListener { _, w, e -> Log.e(TAG, "err w=$w e=$e"); main.post { fire { onPlayState?.invoke(false) } }; true }
             }
             fire { onSongChange?.invoke(song); onPlayState?.invoke(true) }
+            initEqualizer()
             updateMeta(song); updateSession(); postNotif(song)
         } catch (e: Exception) { Log.e(TAG, "play: ${e.message}"); fire { onPlayState?.invoke(false) } }
     }
@@ -310,5 +315,52 @@ class MusicService : Service() {
                 }
             } catch (e: Exception) { }
         }
+    }
+
+    // ── Equalizer — lives in service so it persists ───────────────────────────
+    fun initEqualizer() {
+        val sessionId = try { player?.audioSessionId ?: 0 } catch (e: Exception) { 0 }
+        if (sessionId == 0) return
+        try {
+            if (equalizer == null) {
+                equalizer = Equalizer(0, sessionId).apply { enabled = true }
+            }
+            if (bassBoost == null) {
+                bassBoost = BassBoost(0, sessionId).apply { enabled = true }
+            }
+            // Restore saved EQ settings
+            val prefs = getSharedPreferences("eq_settings", Context.MODE_PRIVATE)
+            val numBands = equalizer!!.numberOfBands.toInt()
+            for (i in 0 until numBands) {
+                val saved = prefs.getInt("band_$i", 0)
+                if (saved != 0) equalizer!!.setBandLevel(i.toShort(), saved.toShort())
+            }
+            val savedBass = prefs.getInt("bass_boost", 0)
+            if (savedBass > 0) bassBoost!!.setStrength(savedBass.toShort())
+        } catch (e: Exception) { }
+    }
+
+    fun getEqualizer(): Equalizer? = equalizer
+
+    fun setEqBand(band: Int, level: Short) {
+        try {
+            equalizer?.setBandLevel(band.toShort(), level)
+            getSharedPreferences("eq_settings", Context.MODE_PRIVATE)
+                .edit().putInt("band_$band", level.toInt()).apply()
+        } catch (e: Exception) { }
+    }
+
+    fun setBassBoost(strength: Int) {
+        try {
+            bassBoost?.setStrength(strength.toShort())
+            getSharedPreferences("eq_settings", Context.MODE_PRIVATE)
+                .edit().putInt("bass_boost", strength).apply()
+        } catch (e: Exception) { }
+    }
+
+    private fun releaseEqualizer() {
+        try { equalizer?.release() } catch (e: Exception) { }
+        try { bassBoost?.release() } catch (e: Exception) { }
+        equalizer = null; bassBoost = null
     }
 }

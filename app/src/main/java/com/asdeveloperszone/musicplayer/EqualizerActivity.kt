@@ -7,194 +7,191 @@ import android.os.Bundle
 import android.os.IBinder
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import androidx.cardview.widget.CardView
 
 class EqualizerActivity : AppCompatActivity(), ServiceConnection {
 
     private var svc: MusicService? = null
     private var bound = false
-    private var eq: Equalizer? = null
-    private var bass: BassBoost? = null
     private lateinit var prefs: SharedPreferences
 
-    // Band seekbars
     private val bandBars = mutableListOf<SeekBar>()
-    private val bandLabels = mutableListOf<TextView>()
+    private val bandValueLabels = mutableListOf<TextView>()
 
-    // Presets
-    private val presets = mapOf(
+    private val presets = linkedMapOf(
         "Flat"      to intArrayOf(0, 0, 0, 0, 0),
-        "Rock"      to intArrayOf(4, 2, -1, 2, 4),
-        "Pop"       to intArrayOf(-1, 2, 4, 2, -1),
-        "Jazz"      to intArrayOf(3, 1, 0, 2, 3),
-        "Classical" to intArrayOf(4, 3, -1, 2, 3),
-        "Bass"      to intArrayOf(6, 4, 0, -1, -1),
-        "Vocal"     to intArrayOf(-2, 0, 3, 3, 2)
+        "Rock"      to intArrayOf(400, 200, -100, 200, 400),
+        "Pop"       to intArrayOf(-100, 200, 400, 200, -100),
+        "Jazz"      to intArrayOf(300, 100, 0, 200, 300),
+        "Classical" to intArrayOf(400, 300, -100, 200, 300),
+        "Bass"      to intArrayOf(600, 400, 0, -100, -100),
+        "Vocal"     to intArrayOf(-200, 0, 300, 300, 200)
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_equalizer)
         prefs = getSharedPreferences("eq_settings", Context.MODE_PRIVATE)
-
         findViewById<ImageButton>(R.id.btnEqBack).setOnClickListener { finish() }
-
-        setupPresetButtons()
         setupBassBoost()
         bindService(Intent(this, MusicService::class.java), this, Context.BIND_AUTO_CREATE)
     }
 
-    private fun setupPresetButtons() {
+    private fun setupPresetButtons(eq: Equalizer) {
         val container = findViewById<LinearLayout>(R.id.presetContainer)
+        container.removeAllViews()
         presets.forEach { (name, _) ->
-            val btn = Button(this).apply {
+            Button(this).apply {
                 text = name
                 setBackgroundResource(R.drawable.bg_tab_inactive)
                 setTextColor(0xFFFFFFFF.toInt())
-                textSize = 12f
+                textSize = 11f
                 val lp = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { setMargins(8, 0, 8, 0) }
+                ).apply { setMargins(6, 0, 6, 0) }
                 layoutParams = lp
-                setPadding(24, 12, 24, 12)
+                setPadding(20, 10, 20, 10)
+                setOnClickListener { applyPreset(name, eq) }
+                container.addView(this)
             }
-            btn.setOnClickListener { applyPreset(name) }
-            container.addView(btn)
         }
     }
 
     private fun setupBassBoost() {
-        val bassBar = findViewById<SeekBar>(R.id.seekBassBoost)
-        val bassValue = prefs.getInt("bass_boost", 0)
-        bassBar.progress = bassValue
+        val bassBar   = findViewById<SeekBar>(R.id.seekBassBoost)
+        val tvBassVal = findViewById<TextView>(R.id.tvBassValue)
+        val saved     = prefs.getInt("bass_boost", 0)
+        bassBar.max      = 1000
+        bassBar.progress = saved
+        tvBassVal.text   = "$saved"
 
         bassBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: SeekBar, p: Int, user: Boolean) {
                 prefs.edit().putInt("bass_boost", p).apply()
-                bass?.setStrength(p.toShort())
-                findViewById<TextView>(R.id.tvBassValue).text = "$p"
+                tvBassVal.text = "$p"
+                // Apply to service's BassBoost
+                svc?.setBassBoost(p)
             }
             override fun onStartTrackingTouch(sb: SeekBar) {}
             override fun onStopTrackingTouch(sb: SeekBar) {}
         })
-        findViewById<TextView>(R.id.tvBassValue).text = "$bassValue"
     }
 
-    private fun setupEqBands(equalizer: Equalizer) {
+    private fun setupEqBands(eq: Equalizer) {
         val container = findViewById<LinearLayout>(R.id.eqBandsContainer)
         container.removeAllViews()
-        bandBars.clear(); bandLabels.clear()
+        bandBars.clear(); bandValueLabels.clear()
 
-        val numBands = equalizer.numberOfBands.toInt()
-        val minLevel = equalizer.bandLevelRange[0]
-        val maxLevel = equalizer.bandLevelRange[1]
+        val numBands = eq.numberOfBands.toInt()
+        val minLevel = eq.bandLevelRange[0].toInt()
+        val maxLevel = eq.bandLevelRange[1].toInt()
         val range    = maxLevel - minLevel
 
         for (i in 0 until numBands) {
-            val freqHz = equalizer.getCenterFreq(i.toShort()) / 1000
-            val label  = if (freqHz >= 1000) "${freqHz/1000}kHz" else "${freqHz}Hz"
+            val freqHz = eq.getCenterFreq(i.toShort()) / 1000
+            val freq   = if (freqHz >= 1000) "${freqHz/1000}kHz" else "${freqHz}Hz"
             val saved  = prefs.getInt("band_$i", 0)
 
             val col = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                gravity = android.view.Gravity.CENTER_HORIZONTAL
+                gravity     = android.view.Gravity.CENTER_HORIZONTAL
                 layoutParams = LinearLayout.LayoutParams(0,
                     LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             }
 
             val tvVal = TextView(this).apply {
-                text = "${saved/100}dB"
-                textSize = 10f
+                text      = "${saved / 100}dB"
+                textSize  = 9f
                 setTextColor(0xFFFFFFFF.toInt())
-                gravity = android.view.Gravity.CENTER
+                gravity   = android.view.Gravity.CENTER
             }
 
             val sb = SeekBar(this).apply {
-                rotation = -90f
-                layoutParams = LinearLayout.LayoutParams(200, 48)
-                max = range
-                progress = (saved - minLevel)
+                rotation  = -90f
+                max       = range
+                progress  = (saved - minLevel).coerceIn(0, range)
+                layoutParams = LinearLayout.LayoutParams(180, 52)
                 progressTintList = android.content.res.ColorStateList.valueOf(0xFFCC0000.toInt())
                 thumbTintList    = android.content.res.ColorStateList.valueOf(0xFFFFFFFF.toInt())
             }
 
             val tvFreq = TextView(this).apply {
-                text = label
-                textSize = 10f
+                text      = freq
+                textSize  = 9f
                 setTextColor(0xAAFFFFFF.toInt())
-                gravity = android.view.Gravity.CENTER
+                gravity   = android.view.Gravity.CENTER
             }
 
+            val bandIndex = i
             sb.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(s: SeekBar, p: Int, user: Boolean) {
                     val level = (p + minLevel).toShort()
-                    equalizer.setBandLevel(i.toShort(), level)
-                    prefs.edit().putInt("band_$i", level.toInt()).apply()
-                    tvVal.text = "${level/100}dB"
+                    // Apply via service so it persists
+                    svc?.setEqBand(bandIndex, level)
+                    prefs.edit().putInt("band_$bandIndex", level.toInt()).apply()
+                    tvVal.text = "${level / 100}dB"
                 }
                 override fun onStartTrackingTouch(s: SeekBar) {}
                 override fun onStopTrackingTouch(s: SeekBar) {}
             })
 
-            col.addView(tvVal)
-            col.addView(sb)
-            col.addView(tvFreq)
+            col.addView(tvVal); col.addView(sb); col.addView(tvFreq)
             container.addView(col)
-            bandBars.add(sb)
-            bandLabels.add(tvFreq)
+            bandBars.add(sb); bandValueLabels.add(tvVal)
         }
     }
 
-    private fun applyPreset(name: String) {
-        val eq = eq ?: return
-        val gains = presets[name] ?: return
+    private fun applyPreset(name: String, eq: Equalizer) {
+        val gains    = presets[name] ?: return
         val numBands = eq.numberOfBands.toInt()
-        val min = eq.bandLevelRange[0]
+        val min      = eq.bandLevelRange[0].toInt()
+        val max      = eq.bandLevelRange[1].toInt()
+        val range    = max - min
 
         for (i in 0 until minOf(numBands, gains.size)) {
-            val level = (gains[i] * 100).toShort()
-            eq.setBandLevel(i.toShort(), level)
+            val level = gains[i].toShort()
+            svc?.setEqBand(i, level)
             prefs.edit().putInt("band_$i", level.toInt()).apply()
             if (i < bandBars.size) {
-                bandBars[i].progress = level - min
-                bandLabels[i]
+                bandBars[i].progress = (level - min).coerceIn(0, range)
+                bandValueLabels[i].text = "${level / 100}dB"
             }
         }
         prefs.edit().putString("preset", name).apply()
-        Toast.makeText(this, "Preset: $name", Toast.LENGTH_SHORT).show()
-        // Refresh band views
-        eq.let { setupEqBands(it) }
+        Toast.makeText(this, "Preset: $name applied", Toast.LENGTH_SHORT).show()
     }
 
     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
         svc = (service as MusicService.MusicBinder).getService()
         bound = true
 
-        val sessionId = svc?.getAudioSessionId() ?: return
-        if (sessionId == 0) return
+        // Initialize EQ in service if not already
+        svc?.initEqualizer()
 
-        try {
-            eq = Equalizer(0, sessionId).apply { enabled = true }
-            bass = BassBoost(0, sessionId).apply {
-                enabled = true
-                setStrength(prefs.getInt("bass_boost", 0).toShort())
-            }
-            setupEqBands(eq!!)
+        val eq = svc?.getEqualizer() ?: return
+        setupPresetButtons(eq)
+        setupEqBands(eq)
 
-            // Restore saved band levels
-            val numBands = eq!!.numberOfBands.toInt()
-            for (i in 0 until numBands) {
-                val saved = prefs.getInt("band_$i", 0)
-                if (saved != 0) eq!!.setBandLevel(i.toShort(), saved.toShort())
+        // Restore saved band levels
+        val numBands = eq.numberOfBands.toInt()
+        for (i in 0 until numBands) {
+            val saved = prefs.getInt("band_$i", 0)
+            if (saved != 0) {
+                svc?.setEqBand(i, saved.toShort())
+                val min = eq.bandLevelRange[0].toInt()
+                val max = eq.bandLevelRange[1].toInt()
+                if (i < bandBars.size) {
+                    bandBars[i].progress = (saved - min).coerceIn(0, max - min)
+                    bandValueLabels[i].text = "${saved / 100}dB"
+                }
             }
-        } catch (e: Exception) {
-            Toast.makeText(this, "Equalizer not supported on this device", Toast.LENGTH_LONG).show()
         }
+
+        val bassVal = prefs.getInt("bass_boost", 0)
+        svc?.setBassBoost(bassVal)
     }
 
     override fun onServiceDisconnected(name: ComponentName?) { bound = false; svc = null }
-
     override fun onDestroy() {
         if (bound) { try { unbindService(this) } catch (e: Exception) { }; bound = false }
         super.onDestroy()

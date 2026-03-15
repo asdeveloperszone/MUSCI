@@ -6,7 +6,6 @@
     android:orientation="vertical"
     android:background="@color/bg_dark">
 
-    <!-- Header -->
     <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
         android:orientation="horizontal" android:gravity="center_vertical"
         android:paddingHorizontal="16dp" android:background="@drawable/bg_appbar_gradient">
@@ -26,22 +25,33 @@
             android:orientation="vertical" android:padding="16dp">
 
             <!-- Presets -->
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="PRESETS" android:textColor="@color/red_primary"
-                android:textSize="12sp" android:letterSpacing="0.1" android:layout_marginBottom="8dp"/>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:layout_marginBottom="8dp">
+                <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                    android:src="@drawable/ic_preset" android:tint="@color/red_primary"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="  PRESETS" android:textColor="@color/red_primary"
+                    android:textSize="12sp" android:letterSpacing="0.1"/>
+            </LinearLayout>
 
-            <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:scrollbars="none">
+            <HorizontalScrollView android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:scrollbars="none">
                 <LinearLayout android:id="@+id/presetContainer"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:orientation="horizontal" android:paddingVertical="4dp"/>
             </HorizontalScrollView>
 
             <!-- EQ Bands -->
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="EQUALIZER BANDS" android:textColor="@color/red_primary"
-                android:textSize="12sp" android:letterSpacing="0.1"
-                android:layout_marginTop="20dp" android:layout_marginBottom="8dp"/>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:layout_marginTop="20dp" android:layout_marginBottom="8dp">
+                <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                    android:src="@drawable/ic_equalizer" android:tint="@color/red_primary"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="  EQUALIZER BANDS" android:textColor="@color/red_primary"
+                    android:textSize="12sp" android:letterSpacing="0.1"/>
+            </LinearLayout>
 
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent" android:layout_height="220dp"
@@ -53,10 +63,15 @@
             </androidx.cardview.widget.CardView>
 
             <!-- Bass Boost -->
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="BASS BOOST" android:textColor="@color/red_primary"
-                android:textSize="12sp" android:letterSpacing="0.1"
-                android:layout_marginTop="20dp" android:layout_marginBottom="8dp"/>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:layout_marginTop="20dp" android:layout_marginBottom="8dp">
+                <ImageView android:layout_width="18dp" android:layout_height="18dp"
+                    android:src="@drawable/ic_bass" android:tint="@color/red_primary"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="  BASS BOOST" android:textColor="@color/red_primary"
+                    android:textSize="12sp" android:letterSpacing="0.1"/>
+            </LinearLayout>
 
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -64,8 +79,8 @@
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:orientation="horizontal" android:gravity="center_vertical"
                     android:padding="16dp">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="🔊" android:textSize="20sp"/>
+                    <ImageView android:layout_width="22dp" android:layout_height="22dp"
+                        android:src="@drawable/ic_bass" android:tint="#55FFFFFF"/>
                     <SeekBar android:id="@+id/seekBassBoost"
                         android:layout_width="0dp" android:layout_height="wrap_content"
                         android:layout_weight="1" android:layout_marginHorizontal="12dp"
@@ -73,9 +88,9 @@
                         android:progressTint="@color/red_primary"
                         android:thumbTint="@color/white"/>
                     <TextView android:id="@+id/tvBassValue"
-                        android:layout_width="40dp" android:layout_height="wrap_content"
+                        android:layout_width="44dp" android:layout_height="wrap_content"
                         android:text="0" android:textColor="@color/white"
-                        android:textSize="13sp" android:gravity="center"/>
+                        android:textSize="13sp" android:gravity="end"/>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
