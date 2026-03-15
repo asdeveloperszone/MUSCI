@@ -183,7 +183,7 @@ class NowPlayingActivity : AppCompatActivity(), ServiceConnection {
                     when {
                         dx < -SWIPE_THRESHOLD -> { svc?.next(); animateSwipe(-1); true }
                         dx >  SWIPE_THRESHOLD -> { svc?.previous(); animateSwipe(1); true }
-                        else -> { performClick(); true }
+                        else -> false
                     }
                 }
                 else -> false
